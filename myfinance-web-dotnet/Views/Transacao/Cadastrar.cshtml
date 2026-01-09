@@ -1,4 +1,4 @@
-@model myfinance_web_dotnet.Models.PlanoContaModel 
+@model myfinance_web_dotnet.Models.TransacaoModel 
 
 @{
     ViewData["Title"] = "Criar Plano de Contas";
@@ -11,13 +11,10 @@
         <input type="hidden" asp-for="Id" /><br>
 
         <label>Descricao</label><br>
-        <input type="Text" asp-for="Descricao"/><br>
+        <input type="Text" asp-for="Historico"/><br>
 
         <br>
         <label>Tipo</label><br>
-        <label>@Html.RadioButtonFor(m => m.Tipo, "D")Dispesa</label>
-        <label>@Html.RadioButtonFor(m => m.Tipo, "R")Receita</label>
-
         <br><br>
         <button type="submit" class="btn btn-block btn-success">Registrar</button>
     </form>

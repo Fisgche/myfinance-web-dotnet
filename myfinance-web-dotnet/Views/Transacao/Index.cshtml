@@ -1,28 +1,32 @@
 @using Microsoft.AspNetCore.Components.Web
 @{
-    ViewData["Title"] = "Plano de Contas";
+    ViewData["Title"] = "Transacoes Financeiras";
 }
 
 <h1>@ViewData["Title"]</h1>
 
-<button type="button" class="btn btn-block btn-primary" onclick="Novo()">Criar item de Plano de Conta</button>
+<button type="button" class="btn btn-block btn-primary" onclick="Novo()">Registrar Transacao</button>
 <br><br>
 <table class="table table-bordered">
     <tr>
         <th>Id</th>
-        <th>Descricao</th>
+        <th>Historico</th>
         <th>Tipo</th>
+        <th>Valor</th>
+        <th>Data</th>
         <th>#</th>
         <th>#</th>
     </tr>
 
     @{
-        foreach(var item in (List<PlanoContaModel>)ViewBag.ListaPlanoConta)
+        foreach(var item in (List<TransacaoModel>)ViewBag.ListaTransacao)
         {
            <tr>
                 <td>@item.Id</td>
-                <td>@item.Descricao</td>
-                <td>@item.Tipo</td>
+                <td>@item.Historico</td>
+                <td>@item.PlanoConta.Tipo</td>
+                <td>@item.Valor</td>
+                <td>@item.Date</td>
                 <td><button type="button" class="btn btn-block btn-outline-warning" onclick="Atualizar(@item.Id.ToString())">Editar</button></td>
                 <td><button type="button" class="btn btn-block btn-outline-danger" onclick="Excluir(@item.Id.ToString())">Excluir</button></td>
             </tr> 
@@ -34,18 +38,17 @@
 <script>
     function Novo()
     {
-        window.location.href = "../PlanoConta/Cadastrar";
+        window.location.href = "../Transacao/Cadastrar";
     }
 
     function Atualizar(id)
     {
-        window.location.href = "../PlanoConta/Cadastrar/" + id;
+        window.location.href = "../Transacao/Cadastrar/" + id;
     }
 
     function Excluir(id)
     {
-        window.location.href = "../PlanoConta/Excluir/" + id;
+        window.location.href = "../Transacao/Excluir/" + id;
     }
 
 </script>
-
