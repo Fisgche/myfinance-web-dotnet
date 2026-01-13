@@ -1,21 +1,37 @@
 @model myfinance_web_dotnet.Models.TransacaoModel 
 
 @{
-    ViewData["Title"] = "Criar Plano de Contas";
+    ViewData["Title"] = "Registrar Transacao Financeira";
 }
 
 <h1>@ViewData["Title"]</h1>
 
 <div>
-    <form asp-controller="PlanoConta" asp-action="Cadastrar" method="post">
-        <input type="hidden" asp-for="Id" /><br>
+    <form asp-controller="Transacao" asp-action="Cadastrar" method="post">
+        <input type="hidden" asp-for="Id" /><br> 
 
-        <label>Descricao</label><br>
-        <input type="Text" asp-for="Historico"/><br>
+        <div class="form-group">
+            <label>Data:</label><br>
+            <input type="date" class="form-control" asp-for="Date"/>
+        </div>
 
-        <br>
-        <label>Tipo</label><br>
+        <div class="form-group">
+            <label>Valor:</label><br>
+            <input type="text" class="form-control" asp-for="Valor" step="0.01"/>
+        </div>
+
+        <div class="form-group">
+            <label>Plano de Conta:</label><br>
+            @Html.DropDownListFor(  x => x.PlanoContaId, Model.ListPlanoConta, new {@class="form-select"})
+        </div>
+
+        <div class="form-group">
+            <label>Historico:</label><br>
+            <input type="text" class="form-control" asp-for="Historico"/>
+        </div>
+
         <br><br>
         <button type="submit" class="btn btn-block btn-success">Registrar</button>
+        
     </form>
 </div>

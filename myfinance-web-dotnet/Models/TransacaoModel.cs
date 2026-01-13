@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using myfinance_web_dotnet_domain.Entities;
 
 namespace myfinance_web_dotnet.Models
@@ -19,5 +20,6 @@ namespace myfinance_web_dotnet.Models
         public int PlanoContaId {get; set;}
 
         public PlanoConta PlanoConta {get; set;}
+        public IEnumerable<SelectListItem>? ListPlanoConta {get; set;}
     }
 }
