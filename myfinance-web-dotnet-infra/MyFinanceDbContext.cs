@@ -11,6 +11,7 @@ public class MyFinanceDbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         optionsBuilder.UseSqlServer(@"Server=DESKTOP-8M751P2\SQLEXPRESS;Database=myfinance;Trusted_Connection=True;Trusted_Connection=True;Encrypt=False;TrustServerCertificate=False;");
+        //optionsBuilder.UseSqlServer(@"Server=meuservidorsqlserver.database.windows.net;Database=myfinance;User Id=user;Password=*********;Connect Timeout=60;");
         base.OnConfiguring(optionsBuilder);
     }
 }
