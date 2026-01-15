@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace myfinance_web_dotnet_infra.Interfaces.Base
 {
-    internal interface IRepository<T> where T : class
+    public interface IRepository<T> where T : class
     {
         void Cadastrar(T entidade);
 
