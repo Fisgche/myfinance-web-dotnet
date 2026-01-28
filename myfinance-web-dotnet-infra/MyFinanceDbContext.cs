@@ -11,6 +11,8 @@ public class MyFinanceDbContext : DbContext
 
     public DbSet<Transacao> Transacao {get; set;}
 
+    public DbSet<TransacaoRecorrente> TransacaoRecorrente { get; set; }
+
     public MyFinanceDbContext(IConfiguration configuration)
     {
         _configuration = configuration;
@@ -18,7 +20,6 @@ public class MyFinanceDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        //optionsBuilder.UseSqlServer(@"Server=meuservidorsqlserver.database.windows.net;Database=myfinance;User Id=user;Password=*********;Connect Timeout=60;");  
         optionsBuilder.UseSqlServer(_configuration.GetConnectionString("Database"));
         
         base.OnConfiguring(optionsBuilder);
