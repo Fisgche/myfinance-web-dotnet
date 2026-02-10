@@ -15,9 +15,11 @@ builder.Services.AddDbContext<MyFinanceDbContext>();
 // Dependency Injection for Services
 builder.Services.AddScoped<IPlanoContaService, PlanoContaService>();
 builder.Services.AddScoped<ITransacaoService, TransacaoService>();
+builder.Services.AddScoped<ITransacaoRecorrenteService, TransacaoRecorrenteService>();
 
 // Dependency Injection for Repositories
 builder.Services.AddScoped<IPlanoContaRepository, PlanoContaRepository>();
+builder.Services.AddScoped<ITransacaoRecorrenteRepository, TransacaoRecorrenteRepository>();
 
 var app = builder.Build();
 
