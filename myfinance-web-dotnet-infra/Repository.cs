@@ -43,7 +43,7 @@ namespace myfinance_web_dotnet_infra
             Db.SaveChanges();
         }
 
-        public List<T> ListarRegistros()
+        public virtual List<T> ListarRegistros()
         {
             return DbSetContext.ToList();
         }

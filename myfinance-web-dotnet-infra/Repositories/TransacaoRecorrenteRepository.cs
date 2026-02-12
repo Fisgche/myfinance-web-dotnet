@@ -9,10 +9,15 @@ using System.Threading.Tasks;
 
 namespace myfinance_web_dotnet_infra.Repositories
 {
-    internal class TransacaoRecorrenteRepository : Repository<TransacaoRecorrente>, ITransacaoRecorrenteRepository
+    public class TransacaoRecorrenteRepository : Repository<TransacaoRecorrente>, ITransacaoRecorrenteRepository
     {
-        public TransacaoRecorrenteRepository(DbContext dbContext) : base(dbContext)
+        public TransacaoRecorrenteRepository(MyFinanceDbContext dbContext) : base(dbContext)
         {
+        }
+
+        public override List<TransacaoRecorrente> ListarRegistros()
+        {
+            return DbSetContext.Include(x => x.PlanoConta).ToList();
         }
     }
 }
