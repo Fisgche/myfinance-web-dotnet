@@ -7,11 +7,11 @@ namespace myfinance_web_dotnet_infra;
 public class MyFinanceDbContext : DbContext
 {
     private readonly IConfiguration _configuration;
-    public DbSet<PlanoConta> PlanoConta {get; set;}
+    public DbSet<PlanoConta> PlanoConta {get; set;} = null!;
 
-    public DbSet<Transacao> Transacao {get; set;}
+    public DbSet<Transacao> Transacao {get; set;} = null!;
 
-    public DbSet<TransacaoRecorrente> TransacaoRecorrente { get; set; }
+    public DbSet<TransacaoRecorrente> TransacaoRecorrente {get; set;} = null!;
 
     public MyFinanceDbContext(IConfiguration configuration)
     {

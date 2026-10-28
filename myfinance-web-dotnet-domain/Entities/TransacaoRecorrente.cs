@@ -1,9 +1,4 @@
-﻿using myfinance_web_dotnet_domain.Entities.Base;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using myfinance_web_dotnet_domain.Entities.Base;
 
 namespace myfinance_web_dotnet_domain.Entities
 {
@@ -17,6 +12,6 @@ namespace myfinance_web_dotnet_domain.Entities
 
         public int PlanoContaId { get; set; }
 
-        public PlanoConta PlanoConta { get; set; }
+        public PlanoConta? PlanoConta { get; set; }
     }
 }

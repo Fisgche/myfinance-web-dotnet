@@ -1,19 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using myfinance_web_dotnet_domain.Entities;
+using myfinance_web_dotnet_infra.Interfaces;
 
 namespace myfinance_web_dotnet_service.Interfaces
 {
-    public interface ITransacaoService
+    public interface ITransacaoService : ITransacaoRepository
     {
-        void Cadastrar(Transacao entidade);
-
-        void Excluir(int id);
-
-        List<Transacao> ListarRegistros();
-
-        Transacao RetornarRegistro(int id);
     }
 }

@@ -19,6 +19,7 @@ builder.Services.AddScoped<ITransacaoRecorrenteService, TransacaoRecorrenteServi
 
 // Dependency Injection for Repositories
 builder.Services.AddScoped<IPlanoContaRepository, PlanoContaRepository>();
+builder.Services.AddScoped<ITransacaoRepository, TransacaoRepository>();
 builder.Services.AddScoped<ITransacaoRecorrenteRepository, TransacaoRecorrenteRepository>();
 
 var app = builder.Build();

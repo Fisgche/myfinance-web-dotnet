@@ -35,20 +35,21 @@ Controller (MVC) → I*Service → I*Repository → Repository<T> → MyFinanceD
 - **Infra**:
   - `Repository<T>` (abstrato, `where T : EntityBase, new()`) implementa `IRepository<T>` com `Cadastrar`, `Excluir`, `ListarRegistros` (virtual) e `RetornarRegistro`.
   - `Cadastrar` faz *upsert*: `Id == null` → `Add`; caso contrário → `Attach` + `EntityState.Modified`. Sempre chama `SaveChanges()`.
-  - `Excluir` cria um stub `new T { Id = id }`, faz `Attach` + `Remove`.
-  - `RetornarRegistro` usa `.First()` (lança exceção se não existir).
-  - Repositórios concretos sobrescrevem `ListarRegistros` quando precisam de `Include(x => x.PlanoConta)` (ex.: `TransacaoRecorrenteRepository`).
+  - `Excluir` busca a entidade com `Find`; se não existir, não faz nada. Violação de FK lança `DbUpdateException` (tratada nos controllers).
+  - `RetornarRegistro` retorna `T?` (`FirstOrDefault`); os controllers devolvem `NotFound()` quando é `null`.
+  - Repositórios concretos sobrescrevem `ListarRegistros` quando precisam de `Include(x => x.PlanoConta)` (ex.: `TransacaoRepository`, `TransacaoRecorrenteRepository`).
   - `MyFinanceDbContext` recebe `IConfiguration` e configura o provider em `OnConfiguring` usando a connection string `"Database"`.
 - **Service**:
-  - `IPlanoContaService` e `ITransacaoRecorrenteService` **herdam** das interfaces de repositório correspondentes; os serviços apenas delegam ao repositório.
-  - `TransacaoService` é a exceção (legado): acessa `MyFinanceDbContext` diretamente, sem repositório, e `ITransacaoService` declara os métodos explicitamente. Ao refatorar, siga o padrão dos outros (criar `ITransacaoRepository`/`TransacaoRepository` com `Include` em `ListarRegistros`).
+  - Cada `I*Service` **herda** da interface de repositório correspondente (`I*Repository`); os serviços apenas delegam ao repositório. Nenhum serviço acessa o `DbContext` diretamente.
 - **Web**:
-  - Controllers usam **attribute routing** (`[Route("[controller]")]` + `[Route("Index")]`, `[Route("Cadastrar")]`, `[Route("Cadastrar/{Id}")]`, `[Route("Excluir/{Id}")]`).
-  - `Cadastrar` GET serve tanto para criação quanto para edição (com `Id`); `Cadastrar` POST faz upsert e redireciona para `Index`. `Excluir` é um **GET**.
+  - Controllers usam **attribute routing** (`[Route("[controller]")]` + `[Route("")]`/`[Route("Index")]`, `[Route("Cadastrar")]`, `[Route("Cadastrar/{Id}")]`, `[Route("Excluir/{Id}")]`).
+  - `Cadastrar` GET serve tanto para criação quanto para edição (com `Id`); `Cadastrar` POST valida o `ModelState` (reexibe o formulário com erros, repopulando `ListPlanoConta`), faz upsert e redireciona para `Index`.
+  - `Excluir` é **POST** com `[ValidateAntiForgeryToken]`; nas views `Index` é um `<form method="post">` com `confirm()` em JavaScript. Erros de exclusão vão para `TempData["Erro"]`, exibido no topo do `Index`.
+  - Validação via DataAnnotations nos view models (mensagens em português). Navegação `PlanoConta` e `ListPlanoConta` são `[ValidateNever]`.
   - Controllers mapeiam manualmente entidade ↔ view model (`Models/*Model.cs`); não há AutoMapper.
   - `Index` passa a lista via `ViewBag.Lista*`; as views fazem cast para `List<*Model>`.
   - Formulários de transação usam `SelectList(_planoContaService.ListarRegistros(), "Id", "Descricao")` em `ListPlanoConta` para o dropdown.
-  - Botões nas views `Index` navegam via JavaScript inline (`window.location.href = "../<Controller>/Cadastrar/" + id`).
+  - Botões Novo/Editar nas views `Index` navegam via JavaScript inline (`window.location.href = "../<Controller>/Cadastrar/" + id`).
   - Layout em `Views/Shared/_Layout.cshtml` (Bootstrap + jQuery em `wwwroot/lib`, versionados no repo).
 
 ### Injeção de dependência (`myfinance-web-dotnet/Program.cs`)
@@ -91,10 +92,8 @@ Também existem tarefas equivalentes em `.vscode/tasks.json` (`build`, `publish`
 
 Perfil de publicação Azure (Zip Deploy) em `myfinance-web-dotnet/Properties/ServiceDependencies/myfinanceweb - Zip Deploy/`.
 
-## Pontos de atenção conhecidos
+## Convenções
 
-- Não há validação de modelo (`ModelState`) nem tratamento de erro nos controllers; `RetornarRegistro` com id inexistente lança exceção.
-- `Excluir` via GET e sem confirmação.
-- `TransacaoRecorrenteController` usa `ILogger<PlanoContaController>` (copiado); `Error()` nos controllers retorna `View("Error!")`, que não existe.
-- `TransacaoService` não segue o padrão repositório (ver acima).
-- Propriedades `string` não anuláveis nas entidades/models geram avisos de nullable.
+- Entidades e models inicializam `string` com `string.Empty`; navegações são anuláveis (`PlanoConta?`). Use `?.` ao acessá-las nas views.
+- Erros não tratados caem no handler global `/Home/Error` (`Views/Shared/Error.cshtml`); não crie actions `Error()` nos demais controllers.
+- Os formulários de transação não carregam validação client-side (`_ValidationScriptsPartial`) porque o jQuery Validate rejeitaria valores com vírgula decimal; a validação é feita no servidor.

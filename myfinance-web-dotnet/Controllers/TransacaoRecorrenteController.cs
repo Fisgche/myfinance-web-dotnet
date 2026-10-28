@@ -1,30 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using myfinance_web_dotnet.Models;
 using myfinance_web_dotnet_domain.Entities;
-using myfinance_web_dotnet_service;
 using myfinance_web_dotnet_service.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace myfinance_web_dotnet.Controllers
 {
     [Route("[controller]")]
     public class TransacaoRecorrenteController : Controller
     {
-        private readonly ILogger<PlanoContaController> _logger;
+        private readonly ILogger<TransacaoRecorrenteController> _logger;
 
         private readonly ITransacaoRecorrenteService _transacaoRecorrenteService;
 
         private readonly IPlanoContaService _planoContaService;
 
 
-        public TransacaoRecorrenteController(ILogger<PlanoContaController> logger, ITransacaoRecorrenteService transacaoRecorrenteService, IPlanoContaService planoContaService)
+        public TransacaoRecorrenteController(ILogger<TransacaoRecorrenteController> logger, ITransacaoRecorrenteService transacaoRecorrenteService, IPlanoContaService planoContaService)
         {
             _logger = logger;
             _transacaoRecorrenteService = transacaoRecorrenteService;
@@ -32,6 +25,7 @@ namespace myfinance_web_dotnet.Controllers
         }
 
         [HttpGet]
+        [Route("")]
         [Route("Index")]
         public IActionResult Index()
         {
@@ -60,11 +54,9 @@ namespace myfinance_web_dotnet.Controllers
         [Route("Cadastrar/{Id}")]
         public IActionResult Cadastrar(int? Id)
         {
-            var listaPlanoConta = new SelectList(_planoContaService.ListarRegistros(), "Id", "Descricao");
-
             var transacaoRecorrenteModel = new TransacaoRecorrenteModel()
             {
-                ListPlanoConta = listaPlanoConta,
+                ListPlanoConta = ListarPlanoContas(),
                 DataInicio = DateTime.Now,
                 DataFim = DateTime.Now
             };
@@ -72,6 +64,10 @@ namespace myfinance_web_dotnet.Controllers
             if (Id != null)
             {
                 var transacaoRecorrente = _transacaoRecorrenteService.RetornarRegistro((int)Id);
+                if (transacaoRecorrente == null)
+                {
+                    return NotFound();
+                }
 
                 transacaoRecorrenteModel.Id = transacaoRecorrente.Id;
                 transacaoRecorrenteModel.DataInicio = transacaoRecorrente.DataInicio;
@@ -89,15 +85,26 @@ namespace myfinance_web_dotnet.Controllers
         [HttpPost]
         [Route("Cadastrar")]
         [Route("Cadastrar/{Id}")]
+        [ValidateAntiForgeryToken]
         public IActionResult Cadastrar(TransacaoRecorrenteModel model)
         {
+            if (model.DataFim < model.DataInicio)
+            {
+                ModelState.AddModelError(nameof(model.DataFim), "A data de fim deve ser igual ou posterior a data de inicio.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                model.ListPlanoConta = ListarPlanoContas();
+                return View(model);
+            }
+
             TransacaoRecorrente transacaoRecorrente = new TransacaoRecorrente();
 
             transacaoRecorrente.Id = model.Id;
             transacaoRecorrente.DataInicio = model.DataInicio;
             transacaoRecorrente.DataFim = model.DataFim;
             transacaoRecorrente.Valor = model.Valor;
-            transacaoRecorrente.PlanoConta = model.PlanoConta;
             transacaoRecorrente.PlanoContaId = model.PlanoContaId;
 
             _transacaoRecorrenteService.Cadastrar(transacaoRecorrente);
@@ -105,21 +112,27 @@ namespace myfinance_web_dotnet.Controllers
             return RedirectToAction("Index");
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("Excluir/{Id}")]
-        public IActionResult Excluir(int? Id)
+        [ValidateAntiForgeryToken]
+        public IActionResult Excluir(int Id)
         {
-            _transacaoRecorrenteService.Excluir((int)Id);
+            try
+            {
+                _transacaoRecorrenteService.Excluir(Id);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogWarning(ex, "Falha ao excluir a transacao recorrente {Id}", Id);
+                TempData["Erro"] = "Nao foi possivel excluir a transacao recorrente.";
+            }
 
             return RedirectToAction("Index");
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        private SelectList ListarPlanoContas()
         {
-            return View("Error!");
+            return new SelectList(_planoContaService.ListarRegistros(), "Id", "Descricao");
         }
-
-
     }
 }

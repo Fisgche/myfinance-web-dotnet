@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using myfinance_web_dotnet.Models;
 using myfinance_web_dotnet_domain.Entities;
 using myfinance_web_dotnet_service.Interfaces;
@@ -29,6 +24,7 @@ namespace myfinance_web_dotnet.Controllers
         }
 
         [HttpGet]
+        [Route("")]
         [Route("Index")]
         public IActionResult Index()
         {
@@ -58,16 +54,19 @@ namespace myfinance_web_dotnet.Controllers
         [Route("Cadastrar/{Id}")]
         public IActionResult Cadastrar(int? Id)
         {
-            var listaPlanoConta = new SelectList(_planoContaService.ListarRegistros(),"Id", "Descricao");
-
             var transacaoModel = new TransacaoModel()
             {
-                ListPlanoConta = listaPlanoConta,
+                ListPlanoConta = ListarPlanoContas(),
                 Date = DateTime.Now
             }; 
 
-             if(Id != null){
+            if(Id != null){
                 var transacao = _transacaoService.RetornarRegistro((int) Id);
+                if(transacao == null)
+                {
+                    return NotFound();
+                }
+
                 transacaoModel.Id = transacao.Id;
                 transacaoModel.Date = transacao.Date;
                 transacaoModel.Historico = transacao.Historico;
@@ -83,14 +82,20 @@ namespace myfinance_web_dotnet.Controllers
         [HttpPost]
         [Route("Cadastrar")]
         [Route("Cadastrar/{Id}")]
+        [ValidateAntiForgeryToken]
         public IActionResult Cadastrar(TransacaoModel model)
         {
+            if(!ModelState.IsValid)
+            {
+                model.ListPlanoConta = ListarPlanoContas();
+                return View(model);
+            }
+
             Transacao transacao = new Transacao();
 
             transacao.Id = model.Id;
             transacao.Historico = model.Historico;
             transacao.Date = model.Date;
-            transacao.PlanoConta = model.PlanoConta;
             transacao.PlanoContaId = model.PlanoContaId;
             transacao.Valor = model.Valor;
 
@@ -99,19 +104,27 @@ namespace myfinance_web_dotnet.Controllers
             return RedirectToAction("Index");
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("Excluir/{Id}")]
-        public IActionResult Excluir(int? Id)
+        [ValidateAntiForgeryToken]
+        public IActionResult Excluir(int Id)
         {
-            _transacaoService.Excluir((int)Id);
+            try
+            {
+                _transacaoService.Excluir(Id);
+            }
+            catch(DbUpdateException ex)
+            {
+                _logger.LogWarning(ex, "Falha ao excluir a transacao {Id}", Id);
+                TempData["Erro"] = "Nao foi possivel excluir a transacao.";
+            }
 
             return RedirectToAction("Index");
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        private SelectList ListarPlanoContas()
         {
-            return View("Error!");
+            return new SelectList(_planoContaService.ListarRegistros(), "Id", "Descricao");
         }
     }
 }

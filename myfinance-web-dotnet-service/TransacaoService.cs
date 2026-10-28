@@ -1,54 +1,35 @@
-using System.Security.Cryptography.X509Certificates;
-using Microsoft.EntityFrameworkCore;
 using myfinance_web_dotnet_domain.Entities;
-using myfinance_web_dotnet_infra;
+using myfinance_web_dotnet_infra.Interfaces;
 using myfinance_web_dotnet_service.Interfaces;
 
 namespace myfinance_web_dotnet_service
 {
     public class TransacaoService : ITransacaoService
     {
-        private readonly MyFinanceDbContext _dbContext;
-        public TransacaoService(MyFinanceDbContext dbContext)
+        private readonly ITransacaoRepository _transacaoRepository;
+        public TransacaoService(ITransacaoRepository transacaoRepository)
         {
-            _dbContext = dbContext;
+            _transacaoRepository = transacaoRepository;
         }
 
         public void Cadastrar(Transacao entidade)
         {
-            var dbSet = _dbContext.Transacao;
-
-            if(entidade.Id == null)
-            {
-                dbSet.Add(entidade);
-            }
-            else
-            {
-                dbSet.Attach(entidade);
-                _dbContext.Entry(entidade).State = EntityState.Modified; 
-            }
-
-            _dbContext.SaveChanges();
+            _transacaoRepository.Cadastrar(entidade);
         }
 
         public void Excluir(int id)
         {
-            var Transacao = new Transacao(){ Id = id };
-            _dbContext.Attach(Transacao);
-            _dbContext.Remove(Transacao);
-            _dbContext.SaveChanges();
-
+            _transacaoRepository.Excluir(id);
         }
 
         public List<Transacao> ListarRegistros()
         {
-            var dbSet = _dbContext.Transacao.Include(x=> x.PlanoConta);
-            return dbSet.ToList();
+            return _transacaoRepository.ListarRegistros();
         }
 
-        public Transacao RetornarRegistro(int id)
+        public Transacao? RetornarRegistro(int id)
         {
-            return _dbContext.Transacao.Where(x=> x.Id == id).First();
+            return _transacaoRepository.RetornarRegistro(id);
         }
     }
 }
