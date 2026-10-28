@@ -31,7 +31,7 @@ namespace myfinance_web_dotnet_service
            return _transacaoRecorrenteRepository.ListarRegistros();
         }
 
-        public TransacaoRecorrente RetornarRegistro(int id)
+        public TransacaoRecorrente? RetornarRegistro(int id)
         {
             return _transacaoRecorrenteRepository.RetornarRegistro(id);
         }

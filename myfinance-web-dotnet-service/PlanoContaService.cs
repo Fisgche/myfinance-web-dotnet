@@ -26,7 +26,7 @@ namespace myfinance_web_dotnet_service
             return _planoContaRepository.ListarRegistros();
         }
 
-        public PlanoConta RetornarRegistro(int id)
+        public PlanoConta? RetornarRegistro(int id)
         {
             return _planoContaRepository.RetornarRegistro(id);
         }

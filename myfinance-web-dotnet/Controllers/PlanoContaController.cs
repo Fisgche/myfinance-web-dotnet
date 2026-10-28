@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using myfinance_web_dotnet.Models;
 using myfinance_web_dotnet_domain.Entities;
 using myfinance_web_dotnet_service.Interfaces;
@@ -25,6 +20,7 @@ namespace myfinance_web_dotnet.Controllers
         }
 
         [HttpGet]
+        [Route("")]
         [Route("Index")]
         public IActionResult Index()
         {
@@ -50,6 +46,11 @@ namespace myfinance_web_dotnet.Controllers
         {
             if(Id != null){
                 var planoConta = _planoContaService.RetornarRegistro((int) Id);
+                if(planoConta == null)
+                {
+                    return NotFound();
+                }
+
                 var planoContaModel = new PlanoContaModel()
                 {
                     Id = planoConta.Id,
@@ -68,8 +69,14 @@ namespace myfinance_web_dotnet.Controllers
         [HttpPost]
         [Route("Cadastrar")]
         [Route("Cadastrar/{Id}")]
+        [ValidateAntiForgeryToken]
         public IActionResult Cadastrar(PlanoContaModel model)
         {
+            if(!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
             PlanoConta planoConta = new PlanoConta();
 
             planoConta.Descricao = model.Descricao;
@@ -81,19 +88,22 @@ namespace myfinance_web_dotnet.Controllers
             return RedirectToAction("Index");
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("Excluir/{Id}")]
-        public IActionResult Excluir(int? Id)
+        [ValidateAntiForgeryToken]
+        public IActionResult Excluir(int Id)
         {
-            _planoContaService.Excluir((int)Id);
+            try
+            {
+                _planoContaService.Excluir(Id);
+            }
+            catch(DbUpdateException ex)
+            {
+                _logger.LogWarning(ex, "Falha ao excluir o plano de conta {Id}", Id);
+                TempData["Erro"] = "Nao foi possivel excluir o plano de conta. Verifique se existem transacoes vinculadas a ele.";
+            }
 
             return RedirectToAction("Index");
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View("Error!");
         }
     }
 }
