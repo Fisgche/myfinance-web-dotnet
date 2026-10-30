@@ -8,7 +8,9 @@ Este arquivo orienta o Claude Code (claude.ai/code) ao trabalhar neste repositó
 
 - **Plano de Contas** (`PlanoConta`): categorias com `Descricao` e `Tipo` (`D` = Despesa, `R` = Receita, `I` = Investimento).
 - **Transações** (`Transacao`): `Historico`, `Date`, `Valor` e um `PlanoConta` associado.
-- **Transações Recorrentes** (`TransacaoRecorrente`): `Valor`, `DataInicio`, `DataFim` e um `PlanoConta` associado.
+- **Transações Recorrentes** (`TransacaoRecorrente`): `Valor`, `DataInicio`, `DataFim`, `Frequencia` e um `PlanoConta` associado. `Frequencia` é o enum `myfinance_web_dotnet_domain.Enums.Frequencia`, cujo valor é o intervalo em meses (1 = Mensal, 2, 3, 4, 6, 12 = Anual), gravado como `int`; o texto exibido vem do `[Display]` via `ObterDescricao()`.
+
+Transações únicas e recorrentes são gerenciadas na **mesma tela** (`TransacaoController`): o `Index` tem duas abas (Bootstrap tabs, aba ativa via `?aba=unicas|recorrentes`) e o formulário `Cadastrar` tem a escolha *Única/Recorrente* (`TransacaoModel.Recorrente`), que mostra os campos de cada tipo. Não existe `TransacaoRecorrenteController`; as entidades/tabelas continuam separadas.
 
 Código, nomes de classes/métodos, mensagens de commit e UI estão em **português** (sem acentos nos identificadores). Mantenha esse padrão.
 
@@ -44,12 +46,13 @@ Controller (MVC) → I*Service → I*Repository → Repository<T> → MyFinanceD
 - **Web**:
   - Controllers usam **attribute routing** (`[Route("[controller]")]` + `[Route("")]`/`[Route("Index")]`, `[Route("Cadastrar")]`, `[Route("Cadastrar/{Id}")]`, `[Route("Excluir/{Id}")]`).
   - `Cadastrar` GET serve tanto para criação quanto para edição (com `Id`); `Cadastrar` POST valida o `ModelState` (reexibe o formulário com erros, repopulando `ListPlanoConta`), faz upsert e redireciona para `Index`.
+  - No `TransacaoController`: `Cadastrar/{Id}` edita transação única e `CadastrarRecorrente/{Id}` edita recorrente (ambos usam a view `Cadastrar`; na edição o tipo não pode ser trocado). O POST `Cadastrar` decide a entidade por `model.Recorrente`; a validação dependente do tipo (histórico obrigatório / `DataFim >= DataInicio`) fica em `ValidarPorTipo`. Exclusão: `Excluir/{Id}` e `ExcluirRecorrente/{Id}`.
   - `Excluir` é **POST** com `[ValidateAntiForgeryToken]`; nas views `Index` é um `<form method="post">` com `confirm()` em JavaScript. Erros de exclusão vão para `TempData["Erro"]`, exibido no topo do `Index`.
   - Validação via DataAnnotations nos view models (mensagens em português). Navegação `PlanoConta` e `ListPlanoConta` são `[ValidateNever]`.
   - Controllers mapeiam manualmente entidade ↔ view model (`Models/*Model.cs`); não há AutoMapper.
   - `Index` passa a lista via `ViewBag.Lista*`; as views fazem cast para `List<*Model>`.
   - Formulários de transação usam `SelectList(_planoContaService.ListarRegistros(), "Id", "Descricao")` em `ListPlanoConta` para o dropdown.
-  - Botões Novo/Editar nas views `Index` navegam via JavaScript inline (`window.location.href = "../<Controller>/Cadastrar/" + id`).
+  - Botões Novo/Editar nas views `Index` navegam via JavaScript inline (`window.location.href = "../<Controller>/Cadastrar/" + id`), exceto em `Transacao/Index`, que usa links com tag helpers (`asp-action`).
   - Layout em `Views/Shared/_Layout.cshtml` (Bootstrap + jQuery em `wwwroot/lib`, versionados no repo).
 
 ### Injeção de dependência (`myfinance-web-dotnet/Program.cs`)
@@ -70,7 +73,7 @@ Controller (MVC) → I*Service → I*Repository → Repository<T> → MyFinanceD
 ## Banco de dados
 
 - SQL Server. Connection string `ConnectionStrings:Database` em `appsettings.Development.json` (aponta para uma instância SQLEXPRESS local com Trusted_Connection). `appsettings.json` e `appsettings.Production.json` **não** têm connection string — em produção ela deve vir da configuração do ambiente (Azure).
-- **Não há migrations do EF Core** no repositório; as tabelas (`PlanoConta`, `Transacao`, `TransacaoRecorrente`, nomes iguais aos `DbSet`) são criadas manualmente no banco. Se alterar entidades, avise que o schema precisa ser atualizado.
+- **Não há migrations do EF Core** no repositório; as tabelas (`PlanoConta`, `Transacao`, `TransacaoRecorrente`, nomes iguais aos `DbSet`) são criadas manualmente no banco. Alterações de schema ficam em scripts SQL numerados e idempotentes em `database/` (ex.: `001_transacao_recorrente_frequencia.sql`), que precisam ser executados em cada ambiente (local e Azure). Se alterar entidades, crie o script correspondente.
 
 ## Comandos
 
@@ -85,7 +88,7 @@ dotnet publish myfinance-web-dotnet/myfinance-web-dotnet.csproj
 
 Também existem tarefas equivalentes em `.vscode/tasks.json` (`build`, `publish`, `watch`) e configuração de debug em `.vscode/launch.json`.
 
-- **Não há projeto de testes** nem lint configurados.
+- Testes unitários em `myfinance-web-dotnet-tests` (xUnit + Moq + EF Core InMemory): `dotnet test myfinance-web-dotnet/myfinance-web-dotnet.sln`. Repositórios são testados com `Helpers/TestDbContext` (subclasse do `MyFinanceDbContext` com banco em memória); serviços e controllers com mocks. Não há lint configurado.
 - Rodar a aplicação exige um SQL Server acessível com o banco `myfinance` já criado.
 
 ## Deploy

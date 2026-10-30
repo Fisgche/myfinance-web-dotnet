@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Transacoes Financeiras";
+    var abaRecorrentes = (string)ViewBag.Aba == "recorrentes";
 }
 
 <h1>@ViewData["Title"]</h1>
@@ -9,49 +10,82 @@
     <div class="alert alert-danger">@TempData["Erro"]</div>
 }
 
-<button type="button" class="btn btn-block btn-primary" onclick="Novo()">Registrar Transacao</button>
+<a class="btn btn-block btn-primary" asp-controller="Transacao" asp-action="Cadastrar">Nova Transacao</a>
 <br><br>
-<table class="table table-bordered">
-    <tr>
-        <th>Id</th>
-        <th>Historico</th>
-        <th>Tipo</th>
-        <th>Valor</th>
-        <th>Data</th>
-        <th>#</th>
-        <th>#</th>
-    </tr>
 
-    @{
-        foreach(var item in (List<TransacaoModel>)ViewBag.ListaTransacao)
-        {
-           <tr>
-                <td>@item.Id</td>
-                <td>@item.Historico</td>
-                <td>@item.PlanoConta?.Tipo</td>
-                <td>@item.Valor</td>
-                <td>@item.Date</td>
-                <td><button type="button" class="btn btn-block btn-outline-warning" onclick="Atualizar(@item.Id.ToString())">Editar</button></td>
-                <td>
-                    <form asp-controller="Transacao" asp-action="Excluir" asp-route-Id="@item.Id" method="post" onsubmit="return confirm('Deseja realmente excluir este registro?');">
-                        <button type="submit" class="btn btn-block btn-outline-danger">Excluir</button>
-                    </form>
-                </td>
-            </tr> 
-        }
-    }
-</table>
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(abaRecorrentes ? "" : "active")" id="aba-unicas" data-bs-toggle="tab" data-bs-target="#painel-unicas"
+                type="button" role="tab" aria-controls="painel-unicas" aria-selected="@(abaRecorrentes ? "false" : "true")">Transacoes</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(abaRecorrentes ? "active" : "")" id="aba-recorrentes" data-bs-toggle="tab" data-bs-target="#painel-recorrentes"
+                type="button" role="tab" aria-controls="painel-recorrentes" aria-selected="@(abaRecorrentes ? "true" : "false")">Recorrentes</button>
+    </li>
+</ul>
 
+<div class="tab-content pt-3">
+    <div class="tab-pane fade @(abaRecorrentes ? "" : "show active")" id="painel-unicas" role="tabpanel" aria-labelledby="aba-unicas">
+        <table class="table table-bordered">
+            <tr>
+                <th>Id</th>
+                <th>Historico</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+                <th>Data</th>
+                <th>#</th>
+                <th>#</th>
+            </tr>
 
-<script>
-    function Novo()
-    {
-        window.location.href = "../Transacao/Cadastrar";
-    }
+            @foreach (var item in (List<TransacaoModel>)ViewBag.ListaTransacao)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.Historico</td>
+                    <td>@item.PlanoConta?.Tipo</td>
+                    <td>@item.Valor</td>
+                    <td>@item.Date</td>
+                    <td><a class="btn btn-block btn-outline-warning" asp-controller="Transacao" asp-action="Cadastrar" asp-route-Id="@item.Id">Editar</a></td>
+                    <td>
+                        <form asp-controller="Transacao" asp-action="Excluir" asp-route-Id="@item.Id" method="post" onsubmit="return confirm('Deseja realmente excluir este registro?');">
+                            <button type="submit" class="btn btn-block btn-outline-danger">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+    </div>
 
-    function Atualizar(id)
-    {
-        window.location.href = "../Transacao/Cadastrar/" + id;
-    }
+    <div class="tab-pane fade @(abaRecorrentes ? "show active" : "")" id="painel-recorrentes" role="tabpanel" aria-labelledby="aba-recorrentes">
+        <table class="table table-bordered">
+            <tr>
+                <th>Id</th>
+                <th>Data de Inicio</th>
+                <th>Data de Fim</th>
+                <th>Frequencia</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+                <th>#</th>
+                <th>#</th>
+            </tr>
 
-</script>
+            @foreach (var item in (List<TransacaoModel>)ViewBag.ListaTransacaoRecorrente)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.DataInicio</td>
+                    <td>@item.DataFim</td>
+                    <td>@item.Frequencia.ObterDescricao()</td>
+                    <td>@item.PlanoConta?.Tipo</td>
+                    <td>@item.Valor</td>
+                    <td><a class="btn btn-block btn-outline-warning" asp-controller="Transacao" asp-action="CadastrarRecorrente" asp-route-Id="@item.Id">Editar</a></td>
+                    <td>
+                        <form asp-controller="Transacao" asp-action="ExcluirRecorrente" asp-route-Id="@item.Id" method="post" onsubmit="return confirm('Deseja realmente excluir este registro?');">
+                            <button type="submit" class="btn btn-block btn-outline-danger">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+    </div>
+</div>
