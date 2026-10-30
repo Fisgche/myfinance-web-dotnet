@@ -10,55 +10,72 @@ namespace myfinance_web_dotnet.Controllers
     [Route("[controller]")]
     public class TransacaoController : Controller
     {
+        public const string AbaUnicas = "unicas";
+        public const string AbaRecorrentes = "recorrentes";
+
         private readonly ILogger<TransacaoController> _logger;
 
         private readonly IPlanoContaService _planoContaService;
 
         private readonly ITransacaoService _transacaoService;
 
-        public TransacaoController(ILogger<TransacaoController> logger, ITransacaoService transacaoService, IPlanoContaService planoContaService)
+        private readonly ITransacaoRecorrenteService _transacaoRecorrenteService;
+
+        public TransacaoController(ILogger<TransacaoController> logger, ITransacaoService transacaoService, ITransacaoRecorrenteService transacaoRecorrenteService, IPlanoContaService planoContaService)
         {
             _logger = logger;
             _transacaoService = transacaoService;
+            _transacaoRecorrenteService = transacaoRecorrenteService;
             _planoContaService = planoContaService;
         }
 
         [HttpGet]
         [Route("")]
         [Route("Index")]
-        public IActionResult Index()
+        public IActionResult Index(string? aba)
         {
-            var listaTransacao = _transacaoService.ListarRegistros();
             List<TransacaoModel> transacaoModels = new List<TransacaoModel>();
-
-            foreach(var item in listaTransacao)
+            foreach(var item in _transacaoService.ListarRegistros())
             {
-                var itemTransacao= new TransacaoModel();
-                itemTransacao.Id = item.Id;
-                itemTransacao.Historico = item.Historico;
-                itemTransacao.Date = item.Date;
-                itemTransacao.PlanoConta = item.PlanoConta;
-                itemTransacao.PlanoContaId = item.PlanoContaId;
-                itemTransacao.Valor = item.Valor;
+                transacaoModels.Add(new TransacaoModel()
+                {
+                    Id = item.Id,
+                    Historico = item.Historico,
+                    Date = item.Date,
+                    PlanoConta = item.PlanoConta,
+                    PlanoContaId = item.PlanoContaId,
+                    Valor = item.Valor
+                });
+            }
 
-                transacaoModels.Add(itemTransacao);
+            List<TransacaoModel> transacaoRecorrenteModels = new List<TransacaoModel>();
+            foreach(var item in _transacaoRecorrenteService.ListarRegistros())
+            {
+                transacaoRecorrenteModels.Add(new TransacaoModel()
+                {
+                    Id = item.Id,
+                    Recorrente = true,
+                    DataInicio = item.DataInicio,
+                    DataFim = item.DataFim,
+                    PlanoConta = item.PlanoConta,
+                    PlanoContaId = item.PlanoContaId,
+                    Valor = item.Valor
+                });
             }
 
             ViewBag.ListaTransacao = transacaoModels;
-            
+            ViewBag.ListaTransacaoRecorrente = transacaoRecorrenteModels;
+            ViewBag.Aba = aba == AbaRecorrentes ? AbaRecorrentes : AbaUnicas;
+
             return View();
         }
 
         [HttpGet]
         [Route("Cadastrar")]
         [Route("Cadastrar/{Id}")]
-        public IActionResult Cadastrar(int? Id)
+        public IActionResult Cadastrar(int? Id, bool recorrente = false)
         {
-            var transacaoModel = new TransacaoModel()
-            {
-                ListPlanoConta = ListarPlanoContas(),
-                Date = DateTime.Now
-            }; 
+            var transacaoModel = NovoModel(recorrente && Id == null);
 
             if(Id != null){
                 var transacao = _transacaoService.RetornarRegistro((int) Id);
@@ -72,11 +89,31 @@ namespace myfinance_web_dotnet.Controllers
                 transacaoModel.Historico = transacao.Historico;
                 transacaoModel.PlanoConta = transacao.PlanoConta;
                 transacaoModel.PlanoContaId = transacao.PlanoContaId;
-                transacaoModel.Valor = transacao.Valor;                
-            } 
+                transacaoModel.Valor = transacao.Valor;
+            }
 
             return View(transacaoModel);
+        }
 
+        [HttpGet]
+        [Route("CadastrarRecorrente/{Id}")]
+        public IActionResult CadastrarRecorrente(int Id)
+        {
+            var transacaoRecorrente = _transacaoRecorrenteService.RetornarRegistro(Id);
+            if(transacaoRecorrente == null)
+            {
+                return NotFound();
+            }
+
+            var transacaoModel = NovoModel(true);
+            transacaoModel.Id = transacaoRecorrente.Id;
+            transacaoModel.DataInicio = transacaoRecorrente.DataInicio;
+            transacaoModel.DataFim = transacaoRecorrente.DataFim;
+            transacaoModel.Valor = transacaoRecorrente.Valor;
+            transacaoModel.PlanoConta = transacaoRecorrente.PlanoConta;
+            transacaoModel.PlanoContaId = transacaoRecorrente.PlanoContaId;
+
+            return View("Cadastrar", transacaoModel);
         }
 
         [HttpPost]
@@ -85,23 +122,38 @@ namespace myfinance_web_dotnet.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Cadastrar(TransacaoModel model)
         {
+            ValidarPorTipo(model);
+
             if(!ModelState.IsValid)
             {
                 model.ListPlanoConta = ListarPlanoContas();
-                return View(model);
+                return View("Cadastrar", model);
             }
 
-            Transacao transacao = new Transacao();
+            if(model.Recorrente)
+            {
+                _transacaoRecorrenteService.Cadastrar(new TransacaoRecorrente()
+                {
+                    Id = model.Id,
+                    DataInicio = model.DataInicio,
+                    DataFim = model.DataFim,
+                    Valor = model.Valor,
+                    PlanoContaId = model.PlanoContaId
+                });
 
-            transacao.Id = model.Id;
-            transacao.Historico = model.Historico;
-            transacao.Date = model.Date;
-            transacao.PlanoContaId = model.PlanoContaId;
-            transacao.Valor = model.Valor;
+                return RedirectToAction("Index", new { aba = AbaRecorrentes });
+            }
 
-            _transacaoService.Cadastrar(transacao);
+            _transacaoService.Cadastrar(new Transacao()
+            {
+                Id = model.Id,
+                Historico = model.Historico,
+                Date = model.Date,
+                PlanoContaId = model.PlanoContaId,
+                Valor = model.Valor
+            });
 
-            return RedirectToAction("Index");
+            return RedirectToAction("Index", new { aba = AbaUnicas });
         }
 
         [HttpPost]
@@ -119,7 +171,52 @@ namespace myfinance_web_dotnet.Controllers
                 TempData["Erro"] = "Nao foi possivel excluir a transacao.";
             }
 
-            return RedirectToAction("Index");
+            return RedirectToAction("Index", new { aba = AbaUnicas });
+        }
+
+        [HttpPost]
+        [Route("ExcluirRecorrente/{Id}")]
+        [ValidateAntiForgeryToken]
+        public IActionResult ExcluirRecorrente(int Id)
+        {
+            try
+            {
+                _transacaoRecorrenteService.Excluir(Id);
+            }
+            catch(DbUpdateException ex)
+            {
+                _logger.LogWarning(ex, "Falha ao excluir a transacao recorrente {Id}", Id);
+                TempData["Erro"] = "Nao foi possivel excluir a transacao recorrente.";
+            }
+
+            return RedirectToAction("Index", new { aba = AbaRecorrentes });
+        }
+
+        private void ValidarPorTipo(TransacaoModel model)
+        {
+            if(model.Recorrente)
+            {
+                if(model.DataFim < model.DataInicio)
+                {
+                    ModelState.AddModelError(nameof(model.DataFim), "A data de fim deve ser igual ou posterior a data de inicio.");
+                }
+            }
+            else if(string.IsNullOrWhiteSpace(model.Historico))
+            {
+                ModelState.AddModelError(nameof(model.Historico), "Informe o historico.");
+            }
+        }
+
+        private TransacaoModel NovoModel(bool recorrente)
+        {
+            return new TransacaoModel()
+            {
+                Recorrente = recorrente,
+                ListPlanoConta = ListarPlanoContas(),
+                Date = DateTime.Now,
+                DataInicio = DateTime.Now,
+                DataFim = DateTime.Now
+            };
         }
 
         private SelectList ListarPlanoContas()

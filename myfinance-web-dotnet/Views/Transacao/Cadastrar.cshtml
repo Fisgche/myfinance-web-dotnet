@@ -1,7 +1,10 @@
-@model myfinance_web_dotnet.Models.TransacaoModel 
+@model myfinance_web_dotnet.Models.TransacaoModel
 
 @{
-    ViewData["Title"] = "Registrar Transacao Financeira";
+    var edicao = Model.Id != null;
+    ViewData["Title"] = edicao
+        ? (Model.Recorrente ? "Editar Transacao Recorrente" : "Editar Transacao")
+        : "Registrar Transacao Financeira";
 }
 
 <h1>@ViewData["Title"]</h1>
@@ -9,12 +12,54 @@
 <div>
     <form asp-controller="Transacao" asp-action="Cadastrar" method="post">
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        <input type="hidden" asp-for="Id" /><br> 
+        <input type="hidden" asp-for="Id" />
 
-        <div class="form-group">
-            <label>Data:</label><br>
-            <input type="date" class="form-control" asp-for="Date"/>
-            <span asp-validation-for="Date" class="text-danger"></span>
+        <div class="form-group mb-3">
+            <label>Tipo de transacao:</label><br>
+            @if (edicao)
+            {
+                @* O tipo nao pode ser alterado na edicao: sao tabelas diferentes *@
+                <input type="hidden" name="Recorrente" value="@(Model.Recorrente ? "true" : "false")" />
+                <span class="badge bg-secondary">@(Model.Recorrente ? "Recorrente" : "Unica")</span>
+            }
+            else
+            {
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="Recorrente" id="tipoUnica" value="false" autocomplete="off" @(Model.Recorrente ? "" : "checked") />
+                    <label class="btn btn-outline-primary" for="tipoUnica">Unica</label>
+
+                    <input type="radio" class="btn-check" name="Recorrente" id="tipoRecorrente" value="true" autocomplete="off" @(Model.Recorrente ? "checked" : "") />
+                    <label class="btn btn-outline-primary" for="tipoRecorrente">Recorrente</label>
+                </div>
+            }
+        </div>
+
+        <div id="camposUnica" class="@(Model.Recorrente ? "d-none" : "")">
+            <div class="form-group">
+                <label>Data:</label><br>
+                <input type="date" class="form-control" asp-for="Date"/>
+                <span asp-validation-for="Date" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Historico:</label><br>
+                <input type="text" class="form-control" asp-for="Historico"/>
+                <span asp-validation-for="Historico" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div id="camposRecorrente" class="@(Model.Recorrente ? "" : "d-none")">
+            <div class="form-group">
+                <label>Data de Inicio:</label><br>
+                <input type="date" class="form-control" asp-for="DataInicio"/>
+                <span asp-validation-for="DataInicio" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Data de Fim:</label><br>
+                <input type="date" class="form-control" asp-for="DataFim" />
+                <span asp-validation-for="DataFim" class="text-danger"></span>
+            </div>
         </div>
 
         <div class="form-group">
@@ -29,14 +74,19 @@
             <span asp-validation-for="PlanoContaId" class="text-danger"></span>
         </div>
 
-        <div class="form-group">
-            <label>Historico:</label><br>
-            <input type="text" class="form-control" asp-for="Historico"/>
-            <span asp-validation-for="Historico" class="text-danger"></span>
-        </div>
-
         <br><br>
         <button type="submit" class="btn btn-block btn-success">Registrar</button>
-        
+        <a class="btn btn-block btn-outline-secondary" asp-controller="Transacao" asp-action="Index"
+           asp-route-aba="@(Model.Recorrente ? "recorrentes" : "unicas")">Voltar</a>
     </form>
 </div>
+
+<script>
+    document.querySelectorAll('input[name="Recorrente"][type="radio"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            var recorrente = document.getElementById('tipoRecorrente').checked;
+            document.getElementById('camposUnica').classList.toggle('d-none', recorrente);
+            document.getElementById('camposRecorrente').classList.toggle('d-none', !recorrente);
+        });
+    });
+</script>

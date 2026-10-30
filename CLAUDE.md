@@ -10,6 +10,8 @@ Este arquivo orienta o Claude Code (claude.ai/code) ao trabalhar neste repositó
 - **Transações** (`Transacao`): `Historico`, `Date`, `Valor` e um `PlanoConta` associado.
 - **Transações Recorrentes** (`TransacaoRecorrente`): `Valor`, `DataInicio`, `DataFim` e um `PlanoConta` associado.
 
+Transações únicas e recorrentes são gerenciadas na **mesma tela** (`TransacaoController`): o `Index` tem duas abas (Bootstrap tabs, aba ativa via `?aba=unicas|recorrentes`) e o formulário `Cadastrar` tem a escolha *Única/Recorrente* (`TransacaoModel.Recorrente`), que mostra os campos de cada tipo. Não existe `TransacaoRecorrenteController`; as entidades/tabelas continuam separadas.
+
 Código, nomes de classes/métodos, mensagens de commit e UI estão em **português** (sem acentos nos identificadores). Mantenha esse padrão.
 
 ## Estrutura da solução
@@ -44,12 +46,13 @@ Controller (MVC) → I*Service → I*Repository → Repository<T> → MyFinanceD
 - **Web**:
   - Controllers usam **attribute routing** (`[Route("[controller]")]` + `[Route("")]`/`[Route("Index")]`, `[Route("Cadastrar")]`, `[Route("Cadastrar/{Id}")]`, `[Route("Excluir/{Id}")]`).
   - `Cadastrar` GET serve tanto para criação quanto para edição (com `Id`); `Cadastrar` POST valida o `ModelState` (reexibe o formulário com erros, repopulando `ListPlanoConta`), faz upsert e redireciona para `Index`.
+  - No `TransacaoController`: `Cadastrar/{Id}` edita transação única e `CadastrarRecorrente/{Id}` edita recorrente (ambos usam a view `Cadastrar`; na edição o tipo não pode ser trocado). O POST `Cadastrar` decide a entidade por `model.Recorrente`; a validação dependente do tipo (histórico obrigatório / `DataFim >= DataInicio`) fica em `ValidarPorTipo`. Exclusão: `Excluir/{Id}` e `ExcluirRecorrente/{Id}`.
   - `Excluir` é **POST** com `[ValidateAntiForgeryToken]`; nas views `Index` é um `<form method="post">` com `confirm()` em JavaScript. Erros de exclusão vão para `TempData["Erro"]`, exibido no topo do `Index`.
   - Validação via DataAnnotations nos view models (mensagens em português). Navegação `PlanoConta` e `ListPlanoConta` são `[ValidateNever]`.
   - Controllers mapeiam manualmente entidade ↔ view model (`Models/*Model.cs`); não há AutoMapper.
   - `Index` passa a lista via `ViewBag.Lista*`; as views fazem cast para `List<*Model>`.
   - Formulários de transação usam `SelectList(_planoContaService.ListarRegistros(), "Id", "Descricao")` em `ListPlanoConta` para o dropdown.
-  - Botões Novo/Editar nas views `Index` navegam via JavaScript inline (`window.location.href = "../<Controller>/Cadastrar/" + id`).
+  - Botões Novo/Editar nas views `Index` navegam via JavaScript inline (`window.location.href = "../<Controller>/Cadastrar/" + id`), exceto em `Transacao/Index`, que usa links com tag helpers (`asp-action`).
   - Layout em `Views/Shared/_Layout.cshtml` (Bootstrap + jQuery em `wwwroot/lib`, versionados no repo).
 
 ### Injeção de dependência (`myfinance-web-dotnet/Program.cs`)

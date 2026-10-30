@@ -5,15 +5,27 @@ using myfinance_web_dotnet_domain.Entities;
 
 namespace myfinance_web_dotnet.Models
 {
+    /// <summary>
+    /// Model unico para transacoes singelas (Transacao) e recorrentes (TransacaoRecorrente).
+    /// Os campos usados dependem de <see cref="Recorrente"/>.
+    /// </summary>
     public class TransacaoModel
     {
         public int? Id {get; set;}
 
-        [Required(ErrorMessage = "Informe o historico.")]
+        public bool Recorrente {get; set;}
+
+        // Transacao singela
         public string Historico  {get; set;} = string.Empty;
 
         public DateTime Date  {get; set;}
 
+        // Transacao recorrente
+        public DateTime DataInicio {get; set;}
+
+        public DateTime DataFim {get; set;}
+
+        // Comuns
         public decimal Valor {get; set;}
 
         [Range(1, int.MaxValue, ErrorMessage = "Selecione um plano de conta.")]
