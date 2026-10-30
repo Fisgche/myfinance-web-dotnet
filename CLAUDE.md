@@ -99,4 +99,5 @@ Perfil de publicação Azure (Zip Deploy) em `myfinance-web-dotnet/Properties/Se
 
 - Entidades e models inicializam `string` com `string.Empty`; navegações são anuláveis (`PlanoConta?`). Use `?.` ao acessá-las nas views.
 - Erros não tratados caem no handler global `/Home/Error` (`Views/Shared/Error.cshtml`); não crie actions `Error()` nos demais controllers.
+- A cultura da aplicação é fixa em **pt-BR** (`UseRequestLocalization` em `Program.cs`), então valores decimais usam vírgula (`10,50`) em qualquer servidor.
 - Os formulários de transação não carregam validação client-side (`_ValidationScriptsPartial`) porque o jQuery Validate rejeitaria valores com vírgula decimal; a validação é feita no servidor.

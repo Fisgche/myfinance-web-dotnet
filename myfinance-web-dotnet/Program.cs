@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 using myfinance_web_dotnet_domain.Entities;
 using myfinance_web_dotnet_infra;
 using myfinance_web_dotnet_infra.Interfaces;
@@ -33,6 +35,16 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Cultura fixa pt-BR para datas e valores (ex.: "10,50"), independente do servidor
+var culturaPtBr = new CultureInfo("pt-BR");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(culturaPtBr),
+    SupportedCultures = new[] { culturaPtBr },
+    SupportedUICultures = new[] { culturaPtBr }
+});
+
 app.UseRouting();
 
 app.UseAuthorization();
