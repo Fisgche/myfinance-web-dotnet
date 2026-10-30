@@ -106,3 +106,9 @@ Perfil de publicação Azure (Zip Deploy) em `myfinance-web-dotnet/Properties/Se
 - Entidades e models inicializam `string` com `string.Empty`; navegações são anuláveis (`PlanoConta?`). Use `?.` ao acessá-las nas views.
 - Erros não tratados caem no handler global `/Home/Error` (`Views/Shared/Error.cshtml`); não crie actions `Error()` nos demais controllers.
 - Os formulários de transação não carregam validação client-side (`_ValidationScriptsPartial`) porque o jQuery Validate rejeitaria valores com vírgula decimal; a validação é feita no servidor.
+
+## Próximo passo
+
+**Área de investimentos** (definido em 30/10/2026). O escopo ainda não foi detalhado: confirme com o usuário o que a área deve ter antes de implementar.
+
+Como os investimentos funcionam hoje: não são uma entidade própria. Um investimento é uma transação (única ou recorrente) cujo `PlanoConta` tem `Tipo = "I"`. No dashboard ele aparece como `TipoLancamento.Investimento` (cor `--serie-investimentos`) e é descontado do saldo do mês. Não existe tela própria para investimentos.
