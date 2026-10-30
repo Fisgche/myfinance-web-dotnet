@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using myfinance_web_dotnet_domain.Entities;
+using myfinance_web_dotnet_domain.Enums;
 
 namespace myfinance_web_dotnet.Models
 {
@@ -24,6 +25,8 @@ namespace myfinance_web_dotnet.Models
         public DateTime DataInicio {get; set;}
 
         public DateTime DataFim {get; set;}
+
+        public Frequencia Frequencia {get; set;} = Frequencia.Mensal;
 
         // Comuns
         public decimal Valor {get; set;}

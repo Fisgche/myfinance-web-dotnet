@@ -60,6 +60,12 @@
                 <input type="date" class="form-control" asp-for="DataFim" />
                 <span asp-validation-for="DataFim" class="text-danger"></span>
             </div>
+
+            <div class="form-group">
+                <label>Frequencia:</label><br>
+                <select class="form-select" asp-for="Frequencia" asp-items="Html.GetEnumSelectList<Frequencia>()"></select>
+                <span asp-validation-for="Frequencia" class="text-danger"></span>
+            </div>
         </div>
 
         <div class="form-group">

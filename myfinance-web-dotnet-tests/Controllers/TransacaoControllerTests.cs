@@ -4,6 +4,7 @@ using Moq;
 using myfinance_web_dotnet.Controllers;
 using myfinance_web_dotnet.Models;
 using myfinance_web_dotnet_domain.Entities;
+using myfinance_web_dotnet_domain.Enums;
 using myfinance_web_dotnet_service.Interfaces;
 
 namespace myfinance_web_dotnet_tests.Controllers;
@@ -50,7 +51,7 @@ public class TransacaoControllerTests
         });
         _transacaoRecorrenteService.Setup(s => s.ListarRegistros()).Returns(new List<TransacaoRecorrente>
         {
-            new() { Id = 4, Valor = 120m, DataInicio = new DateTime(2026, 1, 1), DataFim = new DateTime(2026, 12, 31), PlanoContaId = 1, PlanoConta = planoConta }
+            new() { Id = 4, Valor = 120m, DataInicio = new DateTime(2026, 1, 1), DataFim = new DateTime(2026, 12, 31), Frequencia = Frequencia.Trimestral, PlanoContaId = 1, PlanoConta = planoConta }
         });
 
         Assert.IsType<ViewResult>(_controller.Index(null));
@@ -70,6 +71,7 @@ public class TransacaoControllerTests
         Assert.Equal(4, recorrente.Id);
         Assert.Equal(new DateTime(2026, 1, 1), recorrente.DataInicio);
         Assert.Equal(new DateTime(2026, 12, 31), recorrente.DataFim);
+        Assert.Equal(Frequencia.Trimestral, recorrente.Frequencia);
         Assert.Equal(120m, recorrente.Valor);
         Assert.Same(planoConta, recorrente.PlanoConta);
     }
@@ -99,6 +101,7 @@ public class TransacaoControllerTests
         Assert.Equal(DateTime.Today, model.Date.Date);
         Assert.Equal(DateTime.Today, model.DataInicio.Date);
         Assert.Equal(DateTime.Today, model.DataFim.Date);
+        Assert.Equal(Frequencia.Mensal, model.Frequencia);
         Assert.Equal(new[] { "Mercado", "Salário" }, model.ListPlanoConta!.Select(i => i.Text));
         Assert.Equal(new[] { "1", "2" }, model.ListPlanoConta!.Select(i => i.Value));
     }
@@ -142,7 +145,8 @@ public class TransacaoControllerTests
     {
         _transacaoRecorrenteService.Setup(s => s.RetornarRegistro(4)).Returns(new TransacaoRecorrente
         {
-            Id = 4, Valor = 120m, DataInicio = new DateTime(2026, 1, 1), DataFim = new DateTime(2026, 12, 31), PlanoContaId = 1
+            Id = 4, Valor = 120m, DataInicio = new DateTime(2026, 1, 1), DataFim = new DateTime(2026, 12, 31),
+            Frequencia = Frequencia.Bimestral, PlanoContaId = 1
         });
 
         var resultado = Assert.IsType<ViewResult>(_controller.CadastrarRecorrente(4));
@@ -154,6 +158,7 @@ public class TransacaoControllerTests
         Assert.Equal(120m, model.Valor);
         Assert.Equal(new DateTime(2026, 1, 1), model.DataInicio);
         Assert.Equal(new DateTime(2026, 12, 31), model.DataFim);
+        Assert.Equal(Frequencia.Bimestral, model.Frequencia);
         Assert.Equal(1, model.PlanoContaId);
         Assert.NotNull(model.ListPlanoConta);
     }
@@ -188,7 +193,7 @@ public class TransacaoControllerTests
     {
         var model = new TransacaoModel
         {
-            Id = 4, Recorrente = true, Valor = 120m,
+            Id = 4, Recorrente = true, Valor = 120m, Frequencia = Frequencia.Semestral,
             DataInicio = new DateTime(2026, 1, 1), DataFim = new DateTime(2026, 12, 31), PlanoContaId = 1
         };
 
@@ -196,7 +201,8 @@ public class TransacaoControllerTests
 
         _transacaoRecorrenteService.Verify(s => s.Cadastrar(It.Is<TransacaoRecorrente>(t =>
             t.Id == 4 && t.Valor == 120m && t.DataInicio == new DateTime(2026, 1, 1) &&
-            t.DataFim == new DateTime(2026, 12, 31) && t.PlanoContaId == 1)), Times.Once);
+            t.DataFim == new DateTime(2026, 12, 31) && t.Frequencia == Frequencia.Semestral &&
+            t.PlanoContaId == 1)), Times.Once);
         _transacaoService.Verify(s => s.Cadastrar(It.IsAny<Transacao>()), Times.Never);
         Assert.Equal(TransacaoController.AbaRecorrentes, AbaDoRedirect(resultado));
     }
@@ -240,6 +246,21 @@ public class TransacaoControllerTests
 
         Assert.True(_controller.ModelState.ContainsKey(nameof(TransacaoModel.DataFim)));
         Assert.Equal("Cadastrar", resultado.ViewName);
+        _transacaoRecorrenteService.Verify(s => s.Cadastrar(It.IsAny<TransacaoRecorrente>()), Times.Never);
+    }
+
+    [Fact]
+    public void CadastrarPost_RecorrenteComFrequenciaInvalida_ReexibeFormularioComErro()
+    {
+        var model = new TransacaoModel
+        {
+            Recorrente = true, Valor = 10m, PlanoContaId = 1, Frequencia = (Frequencia)5,
+            DataInicio = new DateTime(2026, 1, 1), DataFim = new DateTime(2026, 12, 31)
+        };
+
+        Assert.IsType<ViewResult>(_controller.Cadastrar(model));
+
+        Assert.True(_controller.ModelState.ContainsKey(nameof(TransacaoModel.Frequencia)));
         _transacaoRecorrenteService.Verify(s => s.Cadastrar(It.IsAny<TransacaoRecorrente>()), Times.Never);
     }
 

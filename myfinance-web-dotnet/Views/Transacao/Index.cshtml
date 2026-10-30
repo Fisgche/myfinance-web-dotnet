@@ -62,6 +62,7 @@
                 <th>Id</th>
                 <th>Data de Inicio</th>
                 <th>Data de Fim</th>
+                <th>Frequencia</th>
                 <th>Tipo</th>
                 <th>Valor</th>
                 <th>#</th>
@@ -74,6 +75,7 @@
                     <td>@item.Id</td>
                     <td>@item.DataInicio</td>
                     <td>@item.DataFim</td>
+                    <td>@item.Frequencia.ObterDescricao()</td>
                     <td>@item.PlanoConta?.Tipo</td>
                     <td>@item.Valor</td>
                     <td><a class="btn btn-block btn-outline-warning" asp-controller="Transacao" asp-action="CadastrarRecorrente" asp-route-Id="@item.Id">Editar</a></td>

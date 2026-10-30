@@ -8,7 +8,7 @@ Este arquivo orienta o Claude Code (claude.ai/code) ao trabalhar neste repositó
 
 - **Plano de Contas** (`PlanoConta`): categorias com `Descricao` e `Tipo` (`D` = Despesa, `R` = Receita, `I` = Investimento).
 - **Transações** (`Transacao`): `Historico`, `Date`, `Valor` e um `PlanoConta` associado.
-- **Transações Recorrentes** (`TransacaoRecorrente`): `Valor`, `DataInicio`, `DataFim` e um `PlanoConta` associado.
+- **Transações Recorrentes** (`TransacaoRecorrente`): `Valor`, `DataInicio`, `DataFim`, `Frequencia` e um `PlanoConta` associado. `Frequencia` é o enum `myfinance_web_dotnet_domain.Enums.Frequencia`, cujo valor é o intervalo em meses (1 = Mensal, 2, 3, 4, 6, 12 = Anual), gravado como `int`; o texto exibido vem do `[Display]` via `ObterDescricao()`.
 
 Transações únicas e recorrentes são gerenciadas na **mesma tela** (`TransacaoController`): o `Index` tem duas abas (Bootstrap tabs, aba ativa via `?aba=unicas|recorrentes`) e o formulário `Cadastrar` tem a escolha *Única/Recorrente* (`TransacaoModel.Recorrente`), que mostra os campos de cada tipo. Não existe `TransacaoRecorrenteController`; as entidades/tabelas continuam separadas.
 
@@ -73,7 +73,7 @@ Controller (MVC) → I*Service → I*Repository → Repository<T> → MyFinanceD
 ## Banco de dados
 
 - SQL Server. Connection string `ConnectionStrings:Database` em `appsettings.Development.json` (aponta para uma instância SQLEXPRESS local com Trusted_Connection). `appsettings.json` e `appsettings.Production.json` **não** têm connection string — em produção ela deve vir da configuração do ambiente (Azure).
-- **Não há migrations do EF Core** no repositório; as tabelas (`PlanoConta`, `Transacao`, `TransacaoRecorrente`, nomes iguais aos `DbSet`) são criadas manualmente no banco. Se alterar entidades, avise que o schema precisa ser atualizado.
+- **Não há migrations do EF Core** no repositório; as tabelas (`PlanoConta`, `Transacao`, `TransacaoRecorrente`, nomes iguais aos `DbSet`) são criadas manualmente no banco. Alterações de schema ficam em scripts SQL numerados e idempotentes em `database/` (ex.: `001_transacao_recorrente_frequencia.sql`), que precisam ser executados em cada ambiente (local e Azure). Se alterar entidades, crie o script correspondente.
 
 ## Comandos
 

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using myfinance_web_dotnet.Models;
 using myfinance_web_dotnet_domain.Entities;
+using myfinance_web_dotnet_domain.Enums;
 using myfinance_web_dotnet_service.Interfaces;
 
 namespace myfinance_web_dotnet.Controllers
@@ -57,6 +58,7 @@ namespace myfinance_web_dotnet.Controllers
                     Recorrente = true,
                     DataInicio = item.DataInicio,
                     DataFim = item.DataFim,
+                    Frequencia = item.Frequencia,
                     PlanoConta = item.PlanoConta,
                     PlanoContaId = item.PlanoContaId,
                     Valor = item.Valor
@@ -109,6 +111,7 @@ namespace myfinance_web_dotnet.Controllers
             transacaoModel.Id = transacaoRecorrente.Id;
             transacaoModel.DataInicio = transacaoRecorrente.DataInicio;
             transacaoModel.DataFim = transacaoRecorrente.DataFim;
+            transacaoModel.Frequencia = transacaoRecorrente.Frequencia;
             transacaoModel.Valor = transacaoRecorrente.Valor;
             transacaoModel.PlanoConta = transacaoRecorrente.PlanoConta;
             transacaoModel.PlanoContaId = transacaoRecorrente.PlanoContaId;
@@ -137,6 +140,7 @@ namespace myfinance_web_dotnet.Controllers
                     Id = model.Id,
                     DataInicio = model.DataInicio,
                     DataFim = model.DataFim,
+                    Frequencia = model.Frequencia,
                     Valor = model.Valor,
                     PlanoContaId = model.PlanoContaId
                 });
@@ -199,6 +203,11 @@ namespace myfinance_web_dotnet.Controllers
                 if(model.DataFim < model.DataInicio)
                 {
                     ModelState.AddModelError(nameof(model.DataFim), "A data de fim deve ser igual ou posterior a data de inicio.");
+                }
+
+                if(!Enum.IsDefined(model.Frequencia))
+                {
+                    ModelState.AddModelError(nameof(model.Frequencia), "Selecione uma frequencia valida.");
                 }
             }
             else if(string.IsNullOrWhiteSpace(model.Historico))
