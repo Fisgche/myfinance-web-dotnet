@@ -50,4 +50,15 @@ public class TransacaoServiceTests
 
         Assert.Same(transacao, _service.RetornarRegistro(10));
     }
+
+    [Fact]
+    public void ListarPorPeriodo_RetornaListaDoRepositorio()
+    {
+        var inicio = new DateTime(2026, 10, 1);
+        var fim = new DateTime(2026, 11, 1);
+        var lista = new List<Transacao> { new() { Id = 1, Historico = "Feira" } };
+        _repository.Setup(r => r.ListarPorPeriodo(inicio, fim)).Returns(lista);
+
+        Assert.Same(lista, _service.ListarPorPeriodo(inicio, fim));
+    }
 }

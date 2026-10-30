@@ -12,6 +12,8 @@ Este arquivo orienta o Claude Code (claude.ai/code) ao trabalhar neste repositó
 
 Transações únicas e recorrentes são gerenciadas na **mesma tela** (`TransacaoController`): o `Index` tem duas abas (Bootstrap tabs, aba ativa via `?aba=unicas|recorrentes`) e o formulário `Cadastrar` tem a escolha *Única/Recorrente* (`TransacaoModel.Recorrente`), que mostra os campos de cada tipo. Não existe `TransacaoRecorrenteController`; as entidades/tabelas continuam separadas.
 
+A **home** (`HomeController.Index`) é um dashboard do mês (`?mes=yyyy-MM`; ausente ou inválido = mês atual): totais de receitas, despesas, investimentos e saldo com a comparação com o mês anterior, gráfico da evolução acumulada no mês, despesas por categoria e a lista de lançamentos. Os números vêm do `DashboardService`, que inclui as ocorrências das transações recorrentes.
+
 Código, nomes de classes/métodos, mensagens de commit e UI estão em **português** (sem acentos nos identificadores). Mantenha esse padrão.
 
 ## Estrutura da solução
@@ -40,9 +42,11 @@ Controller (MVC) → I*Service → I*Repository → Repository<T> → MyFinanceD
   - `Excluir` busca a entidade com `Find`; se não existir, não faz nada. Violação de FK lança `DbUpdateException` (tratada nos controllers).
   - `RetornarRegistro` retorna `T?` (`FirstOrDefault`); os controllers devolvem `NotFound()` quando é `null`.
   - Repositórios concretos sobrescrevem `ListarRegistros` quando precisam de `Include(x => x.PlanoConta)` (ex.: `TransacaoRepository`, `TransacaoRecorrenteRepository`).
+  - Consultas por período (já trazem o `PlanoConta`): `ITransacaoRepository.ListarPorPeriodo(inicio, fim)`, intervalo `[inicio, fim)`, e `ITransacaoRecorrenteRepository.ListarVigentesNoPeriodo(inicio, fim)`, recorrentes cuja vigência cruza o intervalo.
   - `MyFinanceDbContext` recebe `IConfiguration` e configura o provider em `OnConfiguring` usando a connection string `"Database"`.
 - **Service**:
   - Cada `I*Service` **herda** da interface de repositório correspondente (`I*Repository`); os serviços apenas delegam ao repositório. Nenhum serviço acessa o `DbContext` diretamente.
+  - Exceção: `DashboardService` (`IDashboardService.ObterResumoMensal(ano, mes)`) não é CRUD. Usa os repositórios de transação para montar o `ResumoMensal` (DTOs em `myfinance-web-dotnet-service/Dtos/`). Uma recorrente ocorre em `DataInicio + k × Frequencia` meses até `DataFim` (`CalcularOcorrencia`; em meses curtos o dia vai para o último dia do mês). O tipo vem de `PlanoConta.Tipo` (`TipoLancamento`); tipo desconhecido aparece na lista, mas não entra nos totais. Saldo = receitas − despesas − investimentos.
 - **Web**:
   - Controllers usam **attribute routing** (`[Route("[controller]")]` + `[Route("")]`/`[Route("Index")]`, `[Route("Cadastrar")]`, `[Route("Cadastrar/{Id}")]`, `[Route("Excluir/{Id}")]`).
   - `Cadastrar` GET serve tanto para criação quanto para edição (com `Id`); `Cadastrar` POST valida o `ModelState` (reexibe o formulário com erros, repopulando `ListPlanoConta`), faz upsert e redireciona para `Index`.
@@ -53,7 +57,9 @@ Controller (MVC) → I*Service → I*Repository → Repository<T> → MyFinanceD
   - `Index` passa a lista via `ViewBag.Lista*`; as views fazem cast para `List<*Model>`.
   - Formulários de transação usam `SelectList(_planoContaService.ListarRegistros(), "Id", "Descricao")` em `ListPlanoConta` para o dropdown.
   - Botões Novo/Editar nas views `Index` navegam via JavaScript inline (`window.location.href = "../<Controller>/Cadastrar/" + id`), exceto em `Transacao/Index`, que usa links com tag helpers (`asp-action`).
-  - Layout em `Views/Shared/_Layout.cshtml` (Bootstrap + jQuery em `wwwroot/lib`, versionados no repo).
+  - Layout em `Views/Shared/_Layout.cshtml` (Bootstrap + jQuery em `wwwroot/lib`, versionados no repo). Tem a seção opcional `Styles` para CSS de uma página só.
+  - Dashboard: view `Home/Index`, `wwwroot/css/dashboard.css` e `wwwroot/js/dashboard.js` (gráfico de linhas em SVG, sem biblioteca; os dados vão num `<script type="application/json" id="dados-evolucao">` e textos vindos do usuário entram sempre via `textContent`). As cores das séries são variáveis CSS (`--serie-receitas` azul, `--serie-despesas` laranja, `--serie-investimentos` verde-água), iguais em todos os gráficos; o texto nunca usa a cor da série. Todo gráfico tem uma tabela equivalente em `<details>`.
+  - Valores e datas exibidos em pt-BR via `Helpers/Formatacao` (independe da cultura do servidor).
 
 ### Injeção de dependência (`myfinance-web-dotnet/Program.cs`)
 
@@ -101,3 +107,9 @@ Perfil de publicação Azure (Zip Deploy) em `myfinance-web-dotnet/Properties/Se
 - Erros não tratados caem no handler global `/Home/Error` (`Views/Shared/Error.cshtml`); não crie actions `Error()` nos demais controllers.
 - A cultura da aplicação é fixa em **pt-BR** (`UseRequestLocalization` em `Program.cs`), então valores decimais usam vírgula (`10,50`) em qualquer servidor.
 - Os formulários de transação não carregam validação client-side (`_ValidationScriptsPartial`) porque o jQuery Validate rejeitaria valores com vírgula decimal; a validação é feita no servidor.
+
+## Próximo passo
+
+**Área de investimentos** (definido em 30/10/2026). O escopo ainda não foi detalhado: confirme com o usuário o que a área deve ter antes de implementar.
+
+Como os investimentos funcionam hoje: não são uma entidade própria. Um investimento é uma transação (única ou recorrente) cujo `PlanoConta` tem `Tipo = "I"`. No dashboard ele aparece como `TipoLancamento.Investimento` (cor `--serie-investimentos`) e é descontado do saldo do mês. Não existe tela própria para investimentos.

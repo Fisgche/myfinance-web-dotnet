@@ -1,0 +1,366 @@
+/*
+ * Dashboard da home (Views/Home/Index.cshtml).
+ *
+ * Cores das series: paleta categorica validada (slots 1 a 3, sobre fundo branco). Receitas, despesas e
+ * investimentos usam sempre a mesma cor, em todos os graficos. O texto nunca usa a cor da serie: a
+ * identificacao vem da "chave" colorida ao lado. O verde-agua dos investimentos tem contraste abaixo de
+ * 3:1 com o fundo, por isso os graficos sempre trazem legenda/rotulos e a tabela equivalente.
+ */
+.dashboard {
+    --superficie: #ffffff;
+    --texto-primario: #212529;
+    --texto-secundario: #495057;
+    --texto-mudo: #6c757d;
+    --grade: #e1e0d9;
+    --linha-base: #c3c2b7;
+    --borda: rgba(11, 11, 11, 0.10);
+    --serie-receitas: #2a78d6;
+    --serie-despesas: #eb6834;
+    --serie-investimentos: #1baf7a;
+    --variacao-boa: #006300;
+    --variacao-ruim: #d03b3b;
+    color: var(--texto-primario);
+}
+
+.dashboard-sobretitulo {
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--texto-mudo);
+}
+
+.dashboard-titulo {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Filtro do mes: uma linha acima de tudo o que ele afeta */
+.dashboard-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-mes {
+    width: auto;
+    min-width: 11rem;
+}
+
+.dashboard-cartao {
+    position: relative;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: .75rem;
+    padding: 1.25rem;
+}
+
+.dashboard-cartao-cabecalho {
+    margin-bottom: 1rem;
+}
+
+.dashboard-cartao-titulo {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.dashboard-cartao-subtitulo {
+    font-size: .875rem;
+    color: var(--texto-mudo);
+    margin: .125rem 0 0;
+}
+
+.dashboard-vazio {
+    color: var(--texto-mudo);
+    margin: 1rem 0;
+}
+
+/* Indicadores (totais do mes) */
+.indicador-titulo {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--texto-secundario);
+    margin: 0 0 .5rem;
+}
+
+.indicador-valor {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.indicador-variacao {
+    font-size: .8125rem;
+    margin: .375rem 0 0;
+    color: var(--texto-mudo);
+}
+
+.indicador-variacao.variacao-boa {
+    color: var(--variacao-boa);
+}
+
+.indicador-variacao.variacao-ruim {
+    color: var(--variacao-ruim);
+}
+
+.indicador-descricao {
+    font-size: .75rem;
+    color: var(--texto-mudo);
+    margin: .25rem 0 0;
+}
+
+/* Chaves de cor: identificam a serie ao lado de um texto na cor normal */
+.chave,
+.chave-linha {
+    display: inline-block;
+    flex: none;
+    background: var(--cor-serie, var(--linha-base));
+}
+
+.chave {
+    width: .625rem;
+    height: .625rem;
+    border-radius: 2px;
+}
+
+.chave-linha {
+    width: 1rem;
+    height: 2px;
+    border-radius: 1px;
+}
+
+.chave-receitas {
+    --cor-serie: var(--serie-receitas);
+}
+
+.chave-despesas {
+    --cor-serie: var(--serie-despesas);
+}
+
+.chave-investimentos {
+    --cor-serie: var(--serie-investimentos);
+}
+
+.legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 .5rem;
+    font-size: .8125rem;
+    color: var(--texto-secundario);
+}
+
+.legenda li {
+    display: flex;
+    align-items: center;
+    gap: .375rem;
+}
+
+/* Grafico de linhas (desenhado por wwwroot/js/dashboard.js) */
+.grafico-linhas {
+    position: relative;
+    min-height: 268px;
+    border-radius: .25rem;
+    touch-action: pan-y;
+}
+
+.grafico-linhas:focus-visible {
+    outline: 2px solid #258cfb;
+    outline-offset: 4px;
+}
+
+.grafico-linhas svg {
+    display: block;
+    overflow: visible;
+}
+
+.grafico-linhas text {
+    font-size: 12px;
+    fill: var(--texto-mudo);
+    font-variant-numeric: tabular-nums;
+}
+
+.grafico-linhas .grade {
+    stroke: var(--grade);
+    stroke-width: 1;
+}
+
+.grafico-linhas .linha-base,
+.grafico-linhas .marcador-hoje {
+    stroke: var(--linha-base);
+    stroke-width: 1;
+}
+
+.grafico-linhas .rotulo-hoje {
+    font-size: 11px;
+}
+
+.grafico-linhas .linha {
+    fill: none;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.grafico-linhas .marcador {
+    stroke: var(--superficie);
+    stroke-width: 2;
+}
+
+.grafico-linhas .linha-mira {
+    stroke: var(--texto-mudo);
+    stroke-width: 1;
+}
+
+.grafico-linhas .rotulo-final {
+    fill: var(--texto-secundario);
+}
+
+.grafico-linhas .rotulo-final-valor {
+    fill: var(--texto-primario);
+    font-weight: 600;
+}
+
+/* Barras horizontais: uma serie so (despesas), todas na mesma cor */
+.barras {
+    display: grid;
+    gap: .375rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.barra {
+    display: grid;
+    grid-template-columns: minmax(6rem, 35%) 1fr;
+    align-items: center;
+    gap: .75rem;
+    padding: .25rem 0;
+    border-radius: .25rem;
+}
+
+.barra:focus-visible {
+    outline: 2px solid #258cfb;
+    outline-offset: 2px;
+}
+
+.barra-rotulo {
+    font-size: .875rem;
+    color: var(--texto-secundario);
+    overflow-wrap: anywhere;
+}
+
+.barra-area {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-height: 24px;
+    border-left: 1px solid var(--linha-base);
+}
+
+.barra-preenchimento {
+    flex: none;
+    width: calc((100% - 7.5rem) * var(--proporcao, 0));
+    min-width: 2px;
+    height: 14px;
+    border-radius: 0 4px 4px 0;
+    background: var(--serie-despesas);
+    transition: filter .1s;
+}
+
+.barra:hover .barra-preenchimento,
+.barra:focus-visible .barra-preenchimento {
+    filter: brightness(1.1);
+}
+
+.barra-valor {
+    font-size: .8125rem;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 575.98px) {
+    .barra {
+        grid-template-columns: 1fr;
+        gap: .25rem;
+    }
+}
+
+/* Dica (tooltip) dos graficos: o valor e o elemento forte, o nome vem depois */
+.dashboard-dica {
+    position: absolute;
+    z-index: 10;
+    min-width: 10rem;
+    padding: .5rem .75rem;
+    font-size: .8125rem;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: .5rem;
+    box-shadow: 0 4px 16px rgba(11, 11, 11, .12);
+    pointer-events: none;
+}
+
+.dashboard-dica[hidden] {
+    display: none;
+}
+
+.dica-titulo {
+    color: var(--texto-secundario);
+    margin-bottom: .25rem;
+}
+
+.dica-linha {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    white-space: nowrap;
+}
+
+.dica-valor {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.dica-nome {
+    color: var(--texto-secundario);
+}
+
+/* Tabelas */
+.numero {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.tipo-lancamento {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    white-space: nowrap;
+}
+
+.tabela-alternativa {
+    margin-top: 1rem;
+    font-size: .875rem;
+}
+
+.tabela-alternativa summary {
+    color: var(--texto-mudo);
+    cursor: pointer;
+}
+
+.tabela-alternativa .table-responsive {
+    margin-top: .5rem;
+    /* so precisa rolar na horizontal; a legenda oculta da tabela gerava 1px de rolagem vertical */
+    overflow-y: hidden;
+}

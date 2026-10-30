@@ -14,5 +14,14 @@ namespace myfinance_web_dotnet_infra.Repositories
         {
             return DbSetContext.Include(x => x.PlanoConta).ToList();
         }
+
+        public List<Transacao> ListarPorPeriodo(DateTime inicio, DateTime fim)
+        {
+            return DbSetContext
+                .Include(x => x.PlanoConta)
+                .Where(x => x.Date >= inicio && x.Date < fim)
+                .OrderBy(x => x.Date)
+                .ToList();
+        }
     }
 }
