@@ -88,7 +88,7 @@ dotnet publish myfinance-web-dotnet/myfinance-web-dotnet.csproj
 
 Também existem tarefas equivalentes em `.vscode/tasks.json` (`build`, `publish`, `watch`) e configuração de debug em `.vscode/launch.json`.
 
-- **Não há projeto de testes** nem lint configurados.
+- Testes unitários em `myfinance-web-dotnet-tests` (xUnit + Moq + EF Core InMemory): `dotnet test myfinance-web-dotnet/myfinance-web-dotnet.sln`. Repositórios são testados com `Helpers/TestDbContext` (subclasse do `MyFinanceDbContext` com banco em memória); serviços e controllers com mocks. Não há lint configurado.
 - Rodar a aplicação exige um SQL Server acessível com o banco `myfinance` já criado.
 
 ## Deploy
