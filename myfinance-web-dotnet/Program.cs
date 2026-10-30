@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.EntityFrameworkCore;
 using myfinance_web_dotnet_domain.Entities;
 using myfinance_web_dotnet_infra;
 using myfinance_web_dotnet_infra.Interfaces;
@@ -25,6 +26,12 @@ builder.Services.AddScoped<ITransacaoRepository, TransacaoRepository>();
 builder.Services.AddScoped<ITransacaoRecorrenteRepository, TransacaoRecorrenteRepository>();
 
 var app = builder.Build();
+
+// Aplica as migrations pendentes (cria as tabelas no primeiro start)
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<MyFinanceDbContext>().Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

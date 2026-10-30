@@ -65,12 +65,15 @@ Controller (MVC) → I*Service → I*Repository → Repository<T> → MyFinanceD
 5. Registrar ambos em `Program.cs`.
 6. `Models/<Entidade>Model.cs`, `Controllers/<Entidade>Controller.cs` e views `Views/<Entidade>/Index.cshtml` e `Cadastrar.cshtml`.
 7. Adicionar link no menu em `_Layout.cshtml`.
-8. Criar a tabela no banco (ver abaixo).
+8. Gerar uma migration (`dotnet ef migrations add ...`) e commitá-la.
 
 ## Banco de dados
 
 - SQL Server. Connection string `ConnectionStrings:Database` em `appsettings.Development.json` (aponta para uma instância SQLEXPRESS local com Trusted_Connection). `appsettings.json` e `appsettings.Production.json` **não** têm connection string — em produção ela deve vir da configuração do ambiente (Azure).
-- **Não há migrations do EF Core** no repositório; as tabelas (`PlanoConta`, `Transacao`, `TransacaoRecorrente`, nomes iguais aos `DbSet`) são criadas manualmente no banco. Se alterar entidades, avise que o schema precisa ser atualizado.
+- Schema gerenciado por **migrations do EF Core** em `myfinance-web-dotnet-infra/Migrations/`. O `Program.cs` chama `Database.Migrate()` na inicialização, então um banco novo (ex.: Azure) é criado/atualizado automaticamente.
+- Configurações de modelo ficam em `MyFinanceDbContext.OnModelCreating`: `Valor` com `decimal(18,2)` e FKs para `PlanoConta` com `DeleteBehavior.Restrict` (excluir plano com transações gera `DbUpdateException`, tratada no controller). Não use cascade.
+- Ao alterar entidades, gere uma nova migration (ver Comandos) e faça commit dela junto.
+- Bancos antigos cujas tabelas foram criadas à mão precisam rodar **uma vez** `scripts/marcar-migration-inicial.sql`, que registra a migration inicial como aplicada; sem isso o start falha com "There is already an object named 'PlanoConta'".
 
 ## Comandos
 
@@ -83,10 +86,17 @@ dotnet watch run --project myfinance-web-dotnet/myfinance-web-dotnet.csproj  # h
 dotnet publish myfinance-web-dotnet/myfinance-web-dotnet.csproj
 ```
 
+Migrations (ferramenta `dotnet-ef` fixada em `.config/dotnet-tools.json`; rode `dotnet tool restore` uma vez):
+
+```bash
+dotnet ef migrations add <Nome> --project myfinance-web-dotnet-infra --startup-project myfinance-web-dotnet --output-dir Migrations
+dotnet ef migrations script --idempotent --project myfinance-web-dotnet-infra --startup-project myfinance-web-dotnet   # SQL para aplicar manualmente
+```
+
 Também existem tarefas equivalentes em `.vscode/tasks.json` (`build`, `publish`, `watch`) e configuração de debug em `.vscode/launch.json`.
 
 - **Não há projeto de testes** nem lint configurados.
-- Rodar a aplicação exige um SQL Server acessível com o banco `myfinance` já criado.
+- Rodar a aplicação exige um SQL Server acessível; o banco e as tabelas são criados pelas migrations no start.
 
 ## Deploy
 
