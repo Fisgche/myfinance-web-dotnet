@@ -234,6 +234,43 @@ public class TransacaoControllerTests
     }
 
     [Fact]
+    public void CadastrarPost_Recorrente_IgnoraErrosDosCamposDeTransacaoUnica()
+    {
+        // O formulario envia os campos escondidos da transacao unica (Historico vazio, Date)
+        _controller.ModelState.AddModelError(nameof(TransacaoModel.Historico), "The Historico field is required.");
+        _controller.ModelState.AddModelError(nameof(TransacaoModel.Date), "Data invalida.");
+        var model = new TransacaoModel
+        {
+            Recorrente = true, Valor = 150m, PlanoContaId = 1, Frequencia = Frequencia.Bimestral,
+            DataInicio = new DateTime(2026, 11, 1), DataFim = new DateTime(2027, 10, 31)
+        };
+
+        Assert.IsType<RedirectToActionResult>(_controller.Cadastrar(model));
+        _transacaoRecorrenteService.Verify(s => s.Cadastrar(It.IsAny<TransacaoRecorrente>()), Times.Once);
+    }
+
+    [Fact]
+    public void CadastrarPost_Unica_IgnoraErrosDosCamposDeTransacaoRecorrente()
+    {
+        _controller.ModelState.AddModelError(nameof(TransacaoModel.DataFim), "Data invalida.");
+        _controller.ModelState.AddModelError(nameof(TransacaoModel.Frequencia), "Valor invalido.");
+        var model = new TransacaoModel { Historico = "Feira", Date = new DateTime(2026, 10, 3), Valor = 45.5m, PlanoContaId = 1 };
+
+        Assert.IsType<RedirectToActionResult>(_controller.Cadastrar(model));
+        _transacaoService.Verify(s => s.Cadastrar(It.IsAny<Transacao>()), Times.Once);
+    }
+
+    [Fact]
+    public void CadastrarPost_UnicaComErroNoValor_ContinuaBloqueando()
+    {
+        _controller.ModelState.AddModelError(nameof(TransacaoModel.Valor), "Valor invalido.");
+        var model = new TransacaoModel { Historico = "Feira", Date = new DateTime(2026, 10, 3), PlanoContaId = 1 };
+
+        Assert.IsType<ViewResult>(_controller.Cadastrar(model));
+        _transacaoService.Verify(s => s.Cadastrar(It.IsAny<Transacao>()), Times.Never);
+    }
+
+    [Fact]
     public void CadastrarPost_RecorrenteComDataFimAntesDoInicio_ReexibeFormularioComErro()
     {
         var model = new TransacaoModel

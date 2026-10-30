@@ -198,6 +198,16 @@ namespace myfinance_web_dotnet.Controllers
 
         private void ValidarPorTipo(TransacaoModel model)
         {
+            // Os campos do outro tipo ficam escondidos no formulario, mas sao enviados mesmo assim;
+            // erros neles nao podem bloquear o cadastro (e nem seriam visiveis para o usuario).
+            var camposIgnorados = model.Recorrente
+                ? new[] { nameof(model.Historico), nameof(model.Date) }
+                : new[] { nameof(model.DataInicio), nameof(model.DataFim), nameof(model.Frequencia) };
+            foreach(var campo in camposIgnorados)
+            {
+                ModelState.Remove(campo);
+            }
+
             if(model.Recorrente)
             {
                 if(model.DataFim < model.DataInicio)

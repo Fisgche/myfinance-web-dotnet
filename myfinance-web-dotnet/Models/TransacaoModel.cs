@@ -17,6 +17,8 @@ namespace myfinance_web_dotnet.Models
         public bool Recorrente {get; set;}
 
         // Transacao singela
+        // Obrigatorio apenas para transacao singela: validado em TransacaoController.ValidarPorTipo
+        [ValidateNever]
         public string Historico  {get; set;} = string.Empty;
 
         public DateTime Date  {get; set;}
