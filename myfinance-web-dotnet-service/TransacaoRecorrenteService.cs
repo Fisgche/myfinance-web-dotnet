@@ -35,5 +35,10 @@ namespace myfinance_web_dotnet_service
         {
             return _transacaoRecorrenteRepository.RetornarRegistro(id);
         }
+
+        public List<TransacaoRecorrente> ListarVigentesNoPeriodo(DateTime inicio, DateTime fim)
+        {
+            return _transacaoRecorrenteRepository.ListarVigentesNoPeriodo(inicio, fim);
+        }
     }
 }

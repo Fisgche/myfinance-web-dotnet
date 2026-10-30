@@ -31,5 +31,10 @@ namespace myfinance_web_dotnet_service
         {
             return _transacaoRepository.RetornarRegistro(id);
         }
+
+        public List<Transacao> ListarPorPeriodo(DateTime inicio, DateTime fim)
+        {
+            return _transacaoRepository.ListarPorPeriodo(inicio, fim);
+        }
     }
 }

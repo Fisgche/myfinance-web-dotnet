@@ -50,4 +50,15 @@ public class TransacaoRecorrenteServiceTests
 
         Assert.Same(transacaoRecorrente, _service.RetornarRegistro(2));
     }
+
+    [Fact]
+    public void ListarVigentesNoPeriodo_RetornaListaDoRepositorio()
+    {
+        var inicio = new DateTime(2026, 10, 1);
+        var fim = new DateTime(2026, 11, 1);
+        var lista = new List<TransacaoRecorrente> { new() { Id = 1, Valor = 50m } };
+        _repository.Setup(r => r.ListarVigentesNoPeriodo(inicio, fim)).Returns(lista);
+
+        Assert.Same(lista, _service.ListarVigentesNoPeriodo(inicio, fim));
+    }
 }

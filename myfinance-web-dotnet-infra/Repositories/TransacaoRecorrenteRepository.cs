@@ -19,5 +19,13 @@ namespace myfinance_web_dotnet_infra.Repositories
         {
             return DbSetContext.Include(x => x.PlanoConta).ToList();
         }
+
+        public List<TransacaoRecorrente> ListarVigentesNoPeriodo(DateTime inicio, DateTime fim)
+        {
+            return DbSetContext
+                .Include(x => x.PlanoConta)
+                .Where(x => x.DataInicio < fim && x.DataFim >= inicio)
+                .ToList();
+        }
     }
 }

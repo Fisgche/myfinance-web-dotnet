@@ -1,3 +1,294 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model DashboardModel
+@using System.Globalization
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Resumo do mês";
+    var resumo = Model.Resumo;
+    var nomeMes = Formatacao.MesAno(Model.Mes);
+    var mesNaFrase = Formatacao.MesAnoNaFrase(Model.Mes);
+    var quantidadeRecorrentes = resumo.Lancamentos.Count(x => x.Recorrente);
+    var mesAnteriorAbreviado = Formatacao.MesAbreviado(Model.MesAnterior);
+    var rotuloAnterior = Model.MesAnterior.Year == Model.Mes.Year ? Formatacao.NomeMes(Model.MesAnterior) : Formatacao.MesAno(Model.MesAnterior);
+    var rotuloProximo = Model.ProximoMes.Year == Model.Mes.Year ? Formatacao.NomeMes(Model.ProximoMes) : Formatacao.MesAno(Model.ProximoMes);
+    var maiorDespesa = resumo.DespesasPorCategoria.Select(x => x.Valor).DefaultIfEmpty(0).Max();
+    var diasComLancamento = resumo.Lancamentos.Select(x => x.Data.Day).ToHashSet();
+    var temLancamentosPrevistos = Model.EhMesAtual && resumo.Lancamentos.Any(x => x.Data.Day > Model.DiaAtual);
+
+    var subtituloEvolucao = Model.SeriesEvolucao.Count == 1
+        ? $"{Model.SeriesEvolucao[0].Nome}: valores acumulados dia a dia"
+        : "Valores acumulados dia a dia";
+
+    var dadosEvolucao = JsonSerializer.Serialize(new
+    {
+        ano = Model.Mes.Year,
+        mes = Model.Mes.Month,
+        hoje = Model.DiaAtual,
+        series = Model.SeriesEvolucao.Select(s => new { chave = s.Chave, nome = s.Nome, valores = s.Valores })
+    });
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+<div class="dashboard">
+    <header class="mb-3">
+        <p class="dashboard-sobretitulo mb-1">Resumo financeiro</p>
+        <h1 class="dashboard-titulo">@nomeMes</h1>
+    </header>
+
+    <form class="dashboard-filtros" method="get" asp-controller="Home" asp-action="Index">
+        <a class="btn btn-outline-secondary btn-sm" asp-controller="Home" asp-action="Index"
+           asp-route-mes="@Formatacao.ParametroMes(Model.MesAnterior)" title="@Formatacao.MesAno(Model.MesAnterior)">
+            <span aria-hidden="true">&lsaquo;</span> @rotuloAnterior
+        </a>
+        <label class="visually-hidden" for="mes">Mês</label>
+        <input class="form-control form-control-sm dashboard-mes" type="month" id="mes" name="mes"
+               value="@Formatacao.ParametroMes(Model.Mes)" />
+        <button class="btn btn-outline-primary btn-sm" type="submit">Ver mês</button>
+        <a class="btn btn-outline-secondary btn-sm" asp-controller="Home" asp-action="Index"
+           asp-route-mes="@Formatacao.ParametroMes(Model.ProximoMes)" title="@Formatacao.MesAno(Model.ProximoMes)">
+            @rotuloProximo <span aria-hidden="true">&rsaquo;</span>
+        </a>
+        @if (!Model.EhMesAtual)
+        {
+            <a class="btn btn-link btn-sm" asp-controller="Home" asp-action="Index">Ir para o mês atual</a>
+        }
+    </form>
+
+    <section class="row g-3 mb-3" aria-label="Totais do mês">
+        @foreach (var indicador in Model.Indicadores)
+        {
+            var aumento = indicador.Variacao > 0;
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="dashboard-cartao indicador h-100">
+                    <h2 class="indicador-titulo">
+                        @if (indicador.Serie != null)
+                        {
+                            <span class="chave chave-@indicador.Serie" aria-hidden="true"></span>
+                        }
+                        @indicador.Titulo
+                    </h2>
+                    <p class="indicador-valor">@Formatacao.Moeda(indicador.Valor)</p>
+                    <p class="indicador-variacao variacao-@indicador.Situacao.ToString().ToLowerInvariant()">
+                        @if (indicador.Situacao == SituacaoVariacao.Estavel)
+                        {
+                            <text>Igual a @mesAnteriorAbreviado</text>
+                        }
+                        else
+                        {
+                            <span aria-hidden="true">@(aumento ? "▲" : "▼")</span>
+                            <span class="visually-hidden">@(aumento ? "Aumento de" : "Queda de")</span>
+                            <text>@Formatacao.Moeda(Math.Abs(indicador.Variacao)) vs @mesAnteriorAbreviado</text>
+                        }
+                    </p>
+                    @if (indicador.Descricao != null)
+                    {
+                        <p class="indicador-descricao">@indicador.Descricao</p>
+                    }
+                </div>
+            </div>
+        }
+    </section>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-lg-7">
+            <figure class="dashboard-cartao h-100 mb-0">
+                <figcaption class="dashboard-cartao-cabecalho">
+                    <h2 class="dashboard-cartao-titulo">Evolução no mês</h2>
+                    <p class="dashboard-cartao-subtitulo">@subtituloEvolucao</p>
+                    @if (temLancamentosPrevistos)
+                    {
+                        <p class="dashboard-cartao-subtitulo">Inclui os lançamentos previstos até o fim do mês.</p>
+                    }
+                </figcaption>
+
+                @if (Model.SeriesEvolucao.Count == 0)
+                {
+                    <p class="dashboard-vazio">Nenhuma receita, despesa ou investimento em @mesNaFrase.</p>
+                }
+                else
+                {
+                    @if (Model.SeriesEvolucao.Count > 1)
+                    {
+                        <ul class="legenda" aria-label="Legenda">
+                            @foreach (var serie in Model.SeriesEvolucao)
+                            {
+                                <li><span class="chave-linha chave-@serie.Chave" aria-hidden="true"></span>@serie.Nome</li>
+                            }
+                        </ul>
+                    }
+
+                    <div class="grafico-linhas" id="grafico-evolucao" tabindex="0" role="img"
+                         aria-label="Gráfico de linhas com os valores acumulados em @mesNaFrase. Use as setas para percorrer os dias; os mesmos dados estão na tabela abaixo do gráfico.">
+                    </div>
+                    <p class="visually-hidden" aria-live="polite" id="anuncio-grafico"></p>
+                    <script type="application/json" id="dados-evolucao">@Html.Raw(dadosEvolucao)</script>
+
+                    <details class="tabela-alternativa">
+                        <summary>Ver os dados em tabela</summary>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <caption class="visually-hidden">Valores acumulados nos dias com lançamentos</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Dia</th>
+                                        @foreach (var serie in Model.SeriesEvolucao)
+                                        {
+                                            <th scope="col" class="text-end">@serie.Nome</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < resumo.EvolucaoDiaria.Count; i++)
+                                    {
+                                        if (!diasComLancamento.Contains(i + 1))
+                                        {
+                                            continue;
+                                        }
+                                        <tr>
+                                            <td class="numero">@Formatacao.DiaMes(resumo.EvolucaoDiaria[i].Data)</td>
+                                            @foreach (var serie in Model.SeriesEvolucao)
+                                            {
+                                                <td class="text-end numero">@Formatacao.Moeda(serie.Valores[i])</td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                }
+            </figure>
+        </div>
+
+        <div class="col-12 col-lg-5">
+            <figure class="dashboard-cartao h-100 mb-0">
+                <figcaption class="dashboard-cartao-cabecalho">
+                    <h2 class="dashboard-cartao-titulo">Despesas por categoria</h2>
+                    <p class="dashboard-cartao-subtitulo">Total de @Formatacao.Moeda(resumo.TotalDespesas)</p>
+                </figcaption>
+
+                @if (resumo.DespesasPorCategoria.Count == 0)
+                {
+                    <p class="dashboard-vazio">Nenhuma despesa em @mesNaFrase.</p>
+                }
+                else
+                {
+                    <ul class="barras">
+                        @foreach (var categoria in resumo.DespesasPorCategoria)
+                        {
+                            var proporcao = maiorDespesa > 0 ? Math.Max(0, categoria.Valor) / maiorDespesa : 0;
+                            <li class="barra" tabindex="0"
+                                data-dica-titulo="@categoria.Categoria"
+                                data-dica-valor="@Formatacao.Moeda(categoria.Valor)"
+                                data-dica-detalhe="@Formatacao.Percentual(categoria.Percentual) das despesas">
+                                <span class="barra-rotulo">@categoria.Categoria</span>
+                                <span class="barra-area">
+                                    <span class="barra-preenchimento" style="--proporcao: @proporcao.ToString("0.####", CultureInfo.InvariantCulture)"></span>
+                                    <span class="barra-valor">@Formatacao.Moeda(categoria.Valor)</span>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+
+                    <details class="tabela-alternativa">
+                        <summary>Ver os dados em tabela</summary>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <caption class="visually-hidden">Despesas por categoria em @mesNaFrase</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Categoria</th>
+                                        <th scope="col" class="text-end">Valor</th>
+                                        <th scope="col" class="text-end">% das despesas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var categoria in resumo.DespesasPorCategoria)
+                                    {
+                                        <tr>
+                                            <td>@categoria.Categoria</td>
+                                            <td class="text-end numero">@Formatacao.Moeda(categoria.Valor)</td>
+                                            <td class="text-end numero">@Formatacao.Percentual(categoria.Percentual)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                }
+            </figure>
+        </div>
+    </div>
+
+    <section class="dashboard-cartao" aria-labelledby="titulo-lancamentos">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+                <h2 class="dashboard-cartao-titulo" id="titulo-lancamentos">Lançamentos do mês</h2>
+                @if (resumo.Lancamentos.Count > 0)
+                {
+                    <p class="dashboard-cartao-subtitulo">
+                        @(resumo.Lancamentos.Count == 1 ? "1 lançamento" : $"{resumo.Lancamentos.Count} lançamentos")@(quantidadeRecorrentes > 0 ? $" ({quantidadeRecorrentes} de transações recorrentes)" : "")
+                    </p>
+                }
+            </div>
+            <a class="btn btn-primary btn-sm" asp-controller="Transacao" asp-action="Cadastrar">Nova transação</a>
+        </div>
+
+        @if (resumo.Lancamentos.Count == 0)
+        {
+            <p class="dashboard-vazio mb-0">Nenhum lançamento em @mesNaFrase.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle dashboard-tabela mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Data</th>
+                            <th scope="col">Descrição</th>
+                            <th scope="col">Categoria</th>
+                            @* Em telas pequenas o sinal do valor (+/-) ja indica o tipo *@
+                            <th scope="col" class="d-none d-sm-table-cell">Tipo</th>
+                            <th scope="col" class="text-end">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lancamento in resumo.Lancamentos)
+                        {
+                            var descricao = string.IsNullOrWhiteSpace(lancamento.Descricao) ? "(sem histórico)" : lancamento.Descricao;
+                            <tr>
+                                <td class="numero">@Formatacao.DiaMes(lancamento.Data)</td>
+                                <td>
+                                    @if (lancamento.Id != null)
+                                    {
+                                        <a asp-controller="Transacao" asp-action="@(lancamento.Recorrente ? "CadastrarRecorrente" : "Cadastrar")"
+                                           asp-route-Id="@lancamento.Id">@descricao</a>
+                                    }
+                                    else
+                                    {
+                                        @descricao
+                                    }
+                                </td>
+                                <td>@lancamento.Categoria</td>
+                                <td class="d-none d-sm-table-cell">
+                                    <span class="tipo-lancamento">
+                                        <span class="chave chave-@SeriesDashboard.Chave(lancamento.Tipo)" aria-hidden="true"></span>
+                                        @SeriesDashboard.NomeTipo(lancamento.Tipo)
+                                    </span>
+                                </td>
+                                <td class="text-end numero">@Formatacao.ValorLancamento(lancamento)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
 }
